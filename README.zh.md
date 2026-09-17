@@ -357,6 +357,9 @@ python main.py
 fuzz_agent/
 ├── main.py                      # 入口：横幅、环境检查、向导、启动从站、模糊测试
 ├── requirements.txt             # Python 依赖
+├── start_fuzz.bat               # 一键启动脚本
+├── assets/
+│   └── fonts/simhei.ttf         # PDF 渲染用中文字体
 ├── src/
 │   ├── core/
 │   │   ├── version.py           # 版本号的唯一来源
@@ -370,20 +373,33 @@ fuzz_agent/
 │   │   ├── diagnose.py          # 连通性诊断
 │   │   ├── security.py          # Windows DPAPI 加密存储 API Key
 │   │   ├── runtime_config.py    # 全局运行时开关（如 GPU）
-│   │   └── gpu_detector.py      # GPU 检测（nvidia-smi / torch）
+│   │   ├── gpu_detector.py      # GPU 检测（nvidia-smi / torch）
+│   │   └── color_output.py      # ANSI 彩色输出（Windows VT 降级）
 │   ├── protocols/               # 协议插件
 │   │   ├── registry.py          # 插件注册表
 │   │   ├── base.py              # ProtocolBase 抽象基类
-│   │   ├── func_codes/*.json    # 各协议功能码定义
+│   │   ├── llm_mutator_base.py  # LLM 变异基类（timeout/retry/错误分类/长度校验/None 防护统一收敛）
+│   │   ├── func_codes/*.json    # 各协议功能码定义（7 个）
 │   │   └── {modbus,s7comm,dnp3,iec104,iec61850,enip,opcua}/
 │   │       ├── __init__.py      # register_protocol
 │   │       ├── client.py        # 客户端、报文构造、分类、run_fuzz
 │   │       ├── mutator.py       # 本地确定性变异
-│   │       └── llm_mutator.py   # LLM 变异（OpenAI 兼容）
+│   │       └── llm_mutator.py   # LLM 变异薄壳（委托给 llm_mutator_base）
 │   └── integrations/            # MCP 集成（开发中桩文件）
-├── server/                      # 全部 7 个协议的模拟从站
-├── tools/check_protocol.py      # 协议完整性自检
-├── tests/verify_*.py            # 验证脚本
+│       ├── vulnclaw_mcp.py
+│       ├── codeguard_mcp.py
+│       └── codeinspectus_mcp.py
+├── config/
+│   ├── default.yaml             # 默认配置
+│   └── protocols/*.yaml         # 各协议配置（modbus/s7comm/dnp3）
+├── server/                      # 全部 7 个协议的模拟从站（*_server.py，支持 --port --strict）
+├── tools/
+│   ├── check_protocol.py        # 协议完整性自检
+│   └── clean_before_release.py  # 发布前清理临时/报告文件
+├── tests/
+│   ├── verify_*.py              # 验证脚本（fuzz_flow、combined_report、error_report、fixes 等）
+│   └── legacy/                  # 遗留测试脚本
+├── docs/                        # PRD 文档（协议扩展/审计/审计修复总结）
 └── reports/                     # 生成的报告
 ```
 

@@ -357,6 +357,9 @@ Reports contain: statistical summary, risk grading, anomaly distribution, functi
 fuzz_agent/
 ├── main.py                      # Entry: banner, environment check, wizard, start slave, fuzzing
 ├── requirements.txt             # Python dependencies
+├── start_fuzz.bat               # One-click launch script
+├── assets/
+│   └── fonts/simhei.ttf         # Chinese font for PDF rendering
 ├── src/
 │   ├── core/
 │   │   ├── version.py           # Single source of truth for the version number
@@ -370,20 +373,33 @@ fuzz_agent/
 │   │   ├── diagnose.py          # Connectivity diagnosis
 │   │   ├── security.py          # Windows DPAPI encrypted storage of API key
 │   │   ├── runtime_config.py    # Global runtime switches (e.g. GPU)
-│   │   └── gpu_detector.py      # GPU detection (nvidia-smi / torch)
+│   │   ├── gpu_detector.py      # GPU detection (nvidia-smi / torch)
+│   │   └── color_output.py      # ANSI color output with Windows VT fallback
 │   ├── protocols/               # Protocol plugins
 │   │   ├── registry.py          # Plugin registry
 │   │   ├── base.py              # ProtocolBase abstract base class
-│   │   ├── func_codes/*.json    # Function-code definitions per protocol
+│   │   ├── llm_mutator_base.py  # Shared LLM mutation base (timeout/retry/error-classification/length-check/None-guard)
+│   │   ├── func_codes/*.json    # Function-code definitions per protocol (7 files)
 │   │   └── {modbus,s7comm,dnp3,iec104,iec61850,enip,opcua}/
 │   │       ├── __init__.py      # register_protocol
 │   │       ├── client.py        # Client, packet construction, classification, run_fuzz
 │   │       ├── mutator.py       # Local deterministic mutation
-│   │       └── llm_mutator.py   # LLM mutation (OpenAI-compatible)
+│   │       └── llm_mutator.py   # LLM mutation thin shell (delegates to llm_mutator_base)
 │   └── integrations/            # MCP integrations (stub files under development)
-├── server/                      # Mock slaves for all 7 protocols
-├── tools/check_protocol.py      # Protocol integrity self-check
-├── tests/verify_*.py            # Verification scripts
+│       ├── vulnclaw_mcp.py
+│       ├── codeguard_mcp.py
+│       └── codeinspectus_mcp.py
+├── config/
+│   ├── default.yaml             # Default config
+│   └── protocols/*.yaml         # Per-protocol config (modbus/s7comm/dnp3)
+├── server/                      # Mock slaves for all 7 protocols (*_server.py, support --port --strict)
+├── tools/
+│   ├── check_protocol.py        # Protocol integrity self-check
+│   └── clean_before_release.py  # Clean temp/report files before release
+├── tests/
+│   ├── verify_*.py              # Verification scripts (fuzz_flow, combined_report, error_report, fixes, etc.)
+│   └── legacy/                  # Legacy test scripts
+├── docs/                        # PRD documents (协议扩展/审计/审计修复总结)
 └── reports/                     # Generated reports
 ```
 
