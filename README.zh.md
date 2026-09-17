@@ -1,0 +1,435 @@
+<p align="center">
+  <a href="./README.md"><img src="https://img.shields.io/badge/English-Read in English-8A2BE2" alt="English"></a>
+  <a href="./README.zh.md"><img src="https://img.shields.io/badge/简体中文-当前为中文版-blue" alt="简体中文"></a>
+</p>
+
+<br/>
+
+<pre>
+ __  _  ___  ____   __   _ _____ ____ ___   ____  _  _ _____ _____
+|  \| ||_  || |    / |  / \_   _| |  |   |_/  || ||_   _|  _  /  |
+| ' \ | |_|| |    /  /  / -_\ | | |  |  |  ___ | | |   _| |  |  |
+|-__|| ___||_|__/_ /_  \___\|_| |__||__|  /__/|_| |   |_| __| __|
+                                                                  
+</pre>
+
+<pre>
+╔══════════════════════════════════════════════════════════════╗
+║  I N D U S F U Z Z  ·  工业协议模糊测试智能体                  ║
+╚══════════════════════════════════════════════════════════════╝
+</pre>
+
+<p align="center">
+  在此放置项目 Logo（例如：<code>docs/images/logo.png</code>）。
+  <br/>
+  <em>待替换 (placeholder)</em>
+</p>
+
+---
+
+**关于标题图/Logo。** 上方的横幅标题提供了两种示例样式（ASCII 艺术字 + 方框标题）。你可以用任意矢量工具（Figma / Inkscape）绘制后导出为 PNG/SVG，替换它们；或将产物提交到 `docs/images/` 后更新下方链接。
+
+---
+
+## 目录
+
+1. [项目简介](#1-项目简介)
+2. [路线图](#2-路线图)
+3. [环境要求](#3-环境要求)
+4. [系统兼容性](#4-系统兼容性)
+5. [安装](#5-安装)
+6. [依赖清单](#6-依赖清单)
+7. [模型配置](#7-模型配置)
+8. [支持的模型](#8-支持的模型)
+9. [快速开始](#9-快速开始)
+10. [5 秒快速体验](#10-5-秒快速体验)
+11. [支持的协议](#11-支持的协议)
+12. [已知限制](#12-已知限制)
+13. [使用说明](#13-使用说明)
+14. [报告说明](#14-报告说明)
+15. [项目结构](#15-项目结构)
+16. [常见问题](#16-常见问题)
+17. [免责声明](#17-免责声明)
+18. [开源协议](#18-开源协议)
+
+---
+
+## 技术栈
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![Modbus](https://img.shields.io/badge/Modbus-TCP-brightgreen)
+![OPC UA](https://img.shields.io/badge/OPC%20UA-4840-blue)
+![Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-orange)
+
+---
+
+## 1. 项目简介
+
+**IndusFuzz** 是一个工业协议模糊测试智能体。它用本地 LLM 驱动协议级模糊测试，当 LLM 不可用时自动回退到本地确定性随机变异。
+
+- LLM 驱动变异，自动回退到本地确定性随机变异
+- 本地优先：模型在本地运行，报文不离开本机
+- 交互式命令行向导，无需编写代码即可运行
+
+支持的协议：**Modbus TCP、S7Comm、DNP3、IEC 60870-5-104、IEC 61850 MMS、EtherNet/IP、OPC UA**，预期继续增加
+
+> 安全提示：仅可在你明确获授权测试的系统中使用。本工具可能导致生产设备故障。
+
+---
+
+## 2. 路线图
+
+| 版本 | 主要变更 | 状态 |
+|------|----------|------|
+| v1.8.0 | MCP集成| 计划中 |
+| v1.9.0 | 桌面端应用，NVD/CNVD 漏洞库比对 | 远期 |
+| v2.0.0 | 跨平台（macOS/Linux）、桌面端应用、NVD/CNVD 漏洞库比对 | 远期 |
+
+---
+
+## 3. 环境要求
+
+| 项目 | 要求 |
+|------|------|
+| Python | 3.10 及以上（64 位） |
+| 操作系统 | Windows 10 / 11（64 位） |
+| 磁盘空间 | 代码与依赖约 1 GB；拉取本地模型另计 |
+| GPU（可选）| NVIDIA 显卡 + CUDA，仅用于加速本地 Ollama 推理 |
+
+不需要 GPU。Ollama 默认在 CPU 上运行；使用本地 Ollama 时向导会询问是否启用 GPU 加速。
+
+---
+
+## 4. 系统兼容性
+
+| 功能 | Windows 10/11 | macOS | Linux |
+|------|--------------|-------|-------|
+| 主流程（模糊测试） | ✅ 已测试 | ⚠️ 未测试 | ⚠️ 未测试 |
+| API Key 加密存储 | ✅ DPAPI | ❌ 不支持 | ❌ 不支持 |
+| S7Comm 协议 | ✅ | ⚠️ 需装 libsnap7 | ⚠️ 需装 libsnap7 |
+| 自动打开报告 | ✅ | ⚠️未知 | ⚠️未知 |
+| 默认端口 102/502 | ⚠️ 需管理员权限 | ⚠️ 需 sudo | ⚠️ 需 sudo |
+
+**官方支持**：仅 Windows 10/11（64 位）。
+
+**未测试**：macOS、Linux。理论可行，但可能存在以下问题：
+- API Key 无法加密存储（DPAPI 是 Windows 专用），需改用"不用 LLM"模式
+- 部分端口需要管理员权限
+- 自动打开报告/目录可能失效
+
+---
+
+## 5. 安装
+
+### 源码安装（推荐开发者）
+
+#### 按平台安装
+
+**Windows 用户**（推荐，已测试）：
+按下文步骤安装即可。
+
+**macOS 用户**（未测试）：
+1. 安装 Python 3.10+
+2. 安装 Homebrew
+3. `brew install snap7`（S7Comm 需要）
+4. `pip install -r requirements.txt`
+5. 已知问题：API Key 加密不可用，需用"不用 LLM或本地LLM"模式
+
+**Linux 用户**（未测试）：
+1. 安装 Python 3.10+
+2. `sudo apt install libsnap7-dev`（S7Comm 需要）
+3. `pip install -r requirements.txt`
+4. 已知问题：端口 102/502 需要 sudo，API Key 加密不可用
+
+#### 虚拟环境
+
+虚拟环境用于隔离依赖，避免影响系统 Python。
+
+- `python -m venv agentscope_env` 会创建独立的 `agentscope_env/` 目录，包含自己的 Python 和 pip。
+- 激活后，终端提示符会变成 `(agentscope_env) PS C:\...>`。
+- 退出虚拟环境用 `deactivate`。
+- 删除虚拟环境：直接删除 `agentscope_env` 目录即可。
+- 推荐用虚拟环境而非系统 Python：按项目隔离安装、避免版本冲突、删除时只需删一个目录。
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/IndusFuzz/indusfuzz.git
+cd indusfuzz/fuzz_agent
+
+# 2. 创建并激活虚拟环境
+python -m venv agentscope_env
+.\agentscope_env\Scripts\activate
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 配置模型来源（见下一节）
+python main.py
+```
+
+> Windows 下用 `.\agentscope_env\Scripts\activate` 激活虚拟环境（PowerShell 用 .ps1，cmd 用 .bat）。若是协作开发者，请将 git 地址替换为你的 fork。
+
+### EXE 安装（推荐普通用户）
+
+**可从 Releases 获取。** 从 GitHub [Releases](../../releases) 页面下载 `IndusFuzz.exe`。
+
+### 验证安装是否成功
+
+```bash
+python main.py
+```
+
+出现 IndusFuzz 横幅并进入交互向导即成功。按提示输入 `q` 退出。
+
+---
+
+## 6. 依赖清单
+
+| 包名 | 版本 | 用途 |
+|------|------|------|
+| openai | 3.13.0 | LLM API 调用 |
+| scapy | 2.7.0 | 报文构造/捕获 |
+| pywin32 | 311 | Windows DPAPI 加密 |
+| pymodbus | 3.15.0 | Modbus 协议 |
+| reportlab | 5.0.1 | PDF 生成 |
+| asyncua | 2.0.1 | OPC UA 协议 |
+| python-snap7 | 3.1.2 | S7Comm 协议 |
+| xhtml2pdf | 0.2.19 | HTML 转 PDF |
+
+---
+
+## 7. 模型配置
+
+每次运行只需配置一个模型来源（对所有协议全局生效）。共 4 种：
+
+| 选项 | 适用场景 |
+|------|----------|
+| 本地 Ollama | 推荐。免费、隐私，模型本地运行。可启用 GPU。 |
+| 云端 API | DeepSeek / OpenAI / 自定义云端。需要 API Key。 |
+| 自定义本地模型 | 局域网内 vLLM / LM Studio / LocalAI 的 OpenAI 兼容接口。 |
+| 不用 LLM | 仅本地变异。全离线，无需模型。 |
+
+### 方式一：本地 Ollama（推荐）
+
+1. 安装并运行 Ollama。
+2. 拉取模型，例如：
+   ```bash
+   ollama pull qwen2.5-coder:14b
+   ollama serve
+   ```
+3. 在向导中选择 **本地 Ollama**，会自动列出已下载的模型。
+4. GPU：使用 Ollama 时，向导会询问是否启用 GPU 加速，检测到兼容显卡后自动启用。
+
+### 方式二：云端 API（DeepSeek / OpenAI）
+
+1. 从服务商获取 API Key。
+2. 在向导中选择 **云端 API**，选择预设（DeepSeek / OpenAI）或自定义地址。
+3. 填写 API Key 与 Base URL。
+4. API Key 使用 Windows DPAPI 加密后存入本地配置。
+**云端API数据会发送给第三方，隐私环境切勿使用**
+### 方式三：自定义本地模型（vLLM / LM Studio / LocalAI）
+
+1. 需要一个提供 OpenAI 兼容 REST 接口的本地服务。
+2. 在向导中选择 **自定义本地模型**。
+3. 填写本地服务的 Base URL，例如 `http://localhost:1234/v1`。
+
+### 方式四：不用 LLM
+
+选择 **不用 LLM**，直接使用本地确定性随机变异。无需 API Key 和模型，完全离线。
+
+---
+
+## 8. 支持的模型
+
+### 本地 Ollama 支持的模型（建议）
+
+- `qwen2.5-coder:14b`（推荐）
+- `qwen2.5-coder:7b`（轻量）
+- `deepseek-coder:6.7b`
+- `llama3.1:8b`
+- 其他 Ollama 官方模型均可
+
+### 云端 API 支持的提供商
+
+- DeepSeek（`deepseek-chat`、`deepseek-coder`）
+- OpenAI（`gpt-4o`、`gpt-4o-mini`）
+- 其他 OpenAI 兼容接口（需自定义 Base URL）
+
+### 自定义本地模型支持的框架
+
+- vLLM
+- LM Studio
+- LocalAI
+- 其他 OpenAI 兼容服务
+
+---
+
+## 9. 快速开始
+
+1. **启动**：`python main.py`或`start_fuzz.bat`或`IndusFuzz.exe`
+2. **按向导操作**：依次选择模型来源、场景、协议、功能码、目标地址、超时。
+3. **测试完成后**：打开 `reports/` 目录下的报告。
+
+---
+
+## 10. 5 秒快速体验
+
+```bash
+cd fuzz_agent
+python main.py
+```
+
+选择 **本机自测（local）**，任选一个协议和几个功能码，保持默认目标。在确认步骤按 `L` 可将从站切换为**严格**模式（默认），再输入 `y` 开始。内置从站自动启动，模糊测试运行完成后会在 `reports/` 生成 HTML 报告。
+
+---
+
+## 11. 支持的协议
+
+| 协议 | 默认端口 | 典型设备 | 内置模拟从站 |
+|------|----------|----------|--------------|
+| Modbus TCP | 5020 | PLC、RTU、变频器 | 有 |
+| S7Comm | 10102 | 西门子 S7 PLC | 有 |
+| DNP3 | 20000 | RTU、IED（电力） | 有 |
+| IEC 60870-5-104 | 2404 | 变电站远动（SCADA） | 有 |
+| IEC 61850 MMS | 102 | 变电站 IED、间隔控制器 | 有 |
+| EtherNet/IP | 44818 | 罗克韦尔/艾伦-布拉德利控制器 | 有 |
+| OPC UA | 4840 | 工业网关、HMI、服务器 | 有 |
+
+典型应用场景：
+
+- **Modbus TCP** — 最常见的工业传输协议，优先用于 PLC、RTU、变频器测试。
+- **S7Comm** — 西门子 SIMATIC S7 控制器，ISO/COTP 层的私有协议。
+- **DNP3** — 电力行业 SCADA 的 RTU 与 IED。
+- **IEC 60870-5-104** — 电网调度/SCADA 的 TCP 远动控制。
+- **IEC 61850 MMS** — 数字化变电站基于 MMS/ASN.1 的 IED 通信。
+- **EtherNet/IP / CIP** — 罗克韦尔控制系统及常见工业以太网设备。
+- **OPC UA** — 网关、HMI、历史库与现场服务器之间的互操作层。
+
+---
+
+## 12. 已知限制
+
+| 编号 | 协议 | 说明 |
+|------|------|------|
+| P2-006 | OPC UA | OPC UA 实现基于**自定义帧格式**，可能与标准服务器不兼容。 |
+| P2-011 | S7Comm | S7Comm 模拟从站使用**自定义帧格式**（非标准端口）。 |
+| P2-016 | 全部（6 个 server） | 从站假定单次 `recv` 即可收到一帧完整报文，不处理 TCP 分片/粘包重组的报文。 |
+| P2-017 | MCP 集成 | 3 个 MCP 集成（`codeinspectus_mcp`、`codeguard_mcp`、`vulnclaw_mcp`）仍为桩，开发中。 |
+| R5-7 | 错误报告 | `_summarize_suggestions` 和 `generate_error_report` 目前仅被测试脚本调用，主流程集成待 v1.8.0 完成。 |
+
+---
+
+## 13. 使用说明
+
+### 场景一：本机自测（local）
+
+- 选择场景 **本机自测**。内置模拟从站在**严格**模式下自动启动。
+- 在确认步骤可按 `L` 切换严格/宽松模式，运行后查看报告。
+
+### 场景二：局域网测试（局域网设备）
+
+- 按 `IP:端口` 指定局域网设备为目标。
+- 请确保已获得测试授权。
+
+### 场景三：真实设备测试（真实工业设备）
+
+- 需要明确的测试授权。建议先在本机自测环境验证工具，再接触生产设备。
+
+---
+
+## 14. 报告说明
+
+报告保存在 `reports/` 目录：
+
+| 文件 | 用途 |
+|------|------|
+| `report_<时间戳>.html` | 用浏览器打开 |
+| `report_<时间戳>.pdf` | 打印或分享 |
+| `run.log` | 原始运行日志 |
+
+报告包含：统计摘要、风险分级、异常分布、功能码统计。当某协议的模糊测试因整体超时被强制终止时，报告顶部会显示相应的提示横幅。
+
+---
+
+## 15. 项目结构
+
+```
+fuzz_agent/
+├── main.py                      # 入口：横幅、环境检查、向导、启动从站、模糊测试
+├── requirements.txt             # Python 依赖
+├── src/
+│   ├── core/
+│   │   ├── version.py           # 版本号的唯一来源
+│   │   ├── menu.py              # 6 步交互向导
+│   │   ├── fuzz_loop_llm.py     # 模糊测试编排、LLM 预检、超时熔断、错误报告
+│   │   ├── llm_precheck.py      # LLM 连通性预检 + 协议超时熔断
+│   │   ├── llm_status.py        # 每协议 LLM 调用状态收集
+│   │   ├── report_generator.py  # HTML/PDF/LOG 报告生成
+│   │   ├── result_analyzer.py   # 结果统计
+│   │   ├── slave_launcher.py    # 后台启动/停止模拟从站
+│   │   ├── diagnose.py          # 连通性诊断
+│   │   ├── security.py          # Windows DPAPI 加密存储 API Key
+│   │   ├── runtime_config.py    # 全局运行时开关（如 GPU）
+│   │   └── gpu_detector.py      # GPU 检测（nvidia-smi / torch）
+│   ├── protocols/               # 协议插件
+│   │   ├── registry.py          # 插件注册表
+│   │   ├── base.py              # ProtocolBase 抽象基类
+│   │   ├── func_codes/*.json    # 各协议功能码定义
+│   │   └── {modbus,s7comm,dnp3,iec104,iec61850,enip,opcua}/
+│   │       ├── __init__.py      # register_protocol
+│   │       ├── client.py        # 客户端、报文构造、分类、run_fuzz
+│   │       ├── mutator.py       # 本地确定性变异
+│   │       └── llm_mutator.py   # LLM 变异（OpenAI 兼容）
+│   └── integrations/            # MCP 集成（开发中桩文件）
+├── server/                      # 全部 7 个协议的模拟从站
+├── tools/check_protocol.py      # 协议完整性自检
+├── tests/verify_*.py            # 验证脚本
+└── reports/                     # 生成的报告
+```
+
+---
+
+## 16. 常见问题
+
+**服务器连接失败怎么办？**
+检查目标 `IP:端口` 是否可达、端口是否被占用（如 `netstat -ano | findstr 端口`）、环境与依赖是否安装。向导在失败时会给出排查提示。
+
+**Ollama 未安装 / 不想用云端模型怎么配置？**
+在模型步骤选择 **不用 LLM**。IndusFuzz 会在未配置模型时回退到本地确定性变异。
+
+**自定义本地模型和云端 API 有什么区别？**
+自定义本地模型指向本机/局域网内的 OpenAI 兼容服务（`http://localhost:1234/v1`），数据不离开本机；云端 API 会把请求发送到第三方，敏感场景请勿使用。
+
+**报告里全是 NORMAL 是什么原因？**
+当模拟从站处于**宽松**模式（始终返回固定响应），或目标对畸形帧不做响应时，NORMAL 占比高属正常现象。**严格**模式下从站会校验帧，对非法帧返回异常或断开连接。
+
+**端口被占用怎么处理？**
+更换端口，或释放被占用的端口。本机模式下，若默认端口被占用，向导可自动分配可用端口。
+
+**选择哪个模型合适？**
+本机自测推荐本地 Ollama（隐私、离线）。只有当你需要更强的 LLM 能力且能接受报文出网时才用云端 API。
+
+**我在 macOS/Linux 上能用吗？**
+v1.7.0 官方只支持 Windows 10/11。macOS/Linux 理论可行，但未经过完整测试，可能存在以下问题：
+- API Key 无法加密存储
+- 部分端口需要管理员权限
+- 自动打开报告可能失效
+建议在 Windows 环境使用，或等待 v2.0 跨平台版本。
+
+**为什么只支持 Windows？**
+因为 v1.7.0 使用了 Windows 专用的 DPAPI 加密 API Key。v2.0 计划用跨平台的 keyring 库替代，届时将支持 macOS 和 Linux。
+
+---
+
+## 17. 免责声明
+
+- 本工具**仅用于授权的安全测试**。
+- **禁止**在未授权的生产设备上运行。
+- 使用者需自行承担因未授权测试产生的全部法律责任。
+- 模糊测试会发送畸形帧，可能导致工业设备故障、产线停摆或安全事故。
+
+---
+
+## 18. 开源协议
+
+本项目采用 **Apache License 2.0** 开源。完整条款见 `LICENSE` 文件。

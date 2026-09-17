@@ -1,0 +1,33 @@
+{
+  "protocol": "enip",
+  "default_port": 44818,
+  "func_codes": [
+    {"code": "0x01", "name": "Get_Attributes_All"},
+    {"code": "0x02", "name": "Set_Attributes_All"},
+    {"code": "0x03", "name": "Get_Attribute_List"},
+    {"code": "0x04", "name": "Set_Attribute_List"},
+    {"code": "0x05", "name": "Reset"},
+    {"code": "0x06", "name": "Start"},
+    {"code": "0x07", "name": "Stop"},
+    {"code": "0x08", "name": "Create"},
+    {"code": "0x09", "name": "Delete"},
+    {"code": "0x0A", "name": "Multiple_Service_Packet"},
+    {"code": "0x0D", "name": "Apply_Attributes"},
+    {"code": "0x0E", "name": "Get_Attribute_Single"},
+    {"code": "0x10", "name": "Set_Attribute_Single"},
+    {"code": "0x11", "name": "Find_Next_Object_Instance"},
+    {"code": "0x15", "name": "Restore"},
+    {"code": "0x16", "name": "Save"},
+    {"code": "0x17", "name": "No_Operation"},
+    {"code": "0x18", "name": "Get_Member"},
+    {"code": "0x19", "name": "Set_Member"},
+    {"code": "0x1A", "name": "Insert_Member"},
+    {"code": "0x1B", "name": "Remove_Member"},
+    {"code": "0x1C", "name": "GroupSync"},
+    {"code": "0x4C", "name": "Read_Tag"},
+    {"code": "0x4D", "name": "Write_Tag"},
+    {"code": "0x4E", "name": "Forward_Close"},
+    {"code": "0x52", "name": "Unconnected_Send"},
+    {"code": "0x54", "name": "Forward_Open"}
+  ]
+}

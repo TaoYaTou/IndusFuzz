@@ -1,0 +1,21 @@
+{
+  "protocol": "s7comm",
+  "default_port": 10102,
+  "func_codes": [
+    {"code": "0x00", "name": "CPU Services"},
+    {"code": "0x04", "name": "Read Variable"},
+    {"code": "0x05", "name": "Write Variable"},
+    {"code": "0x06", "name": "Start"},
+    {"code": "0x07", "name": "Upload"},
+    {"code": "0x08", "name": "Password"},
+    {"code": "0x1A", "name": "Start Upload"},
+    {"code": "0x1B", "name": "Upload"},
+    {"code": "0x1C", "name": "Upload Ended"},
+    {"code": "0x1D", "name": "Download Block"},
+    {"code": "0x1E", "name": "Download Ended"},
+    {"code": "0x1F", "name": "Insert Block"},
+    {"code": "0x28", "name": "Diagnose"},
+    {"code": "0x29", "name": "PLC Control"},
+    {"code": "0xF0", "name": "Setup Communication"}
+  ]
+}
