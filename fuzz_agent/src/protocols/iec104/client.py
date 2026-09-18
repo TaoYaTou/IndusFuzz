@@ -116,6 +116,16 @@ class IEC104Client(ProtocolBase):
     name = "iec104"
     default_port = 2404
 
+    def __init__(self):
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+        self._common_addr = 1
+        self._timeout = 5
+        self._conn_failures = 0
+
     def get_default_port(self) -> int:
         return self.default_port
 
@@ -124,9 +134,116 @@ class IEC104Client(ProtocolBase):
 
     def build_request(self, **kwargs):
         type_id = kwargs.get("type_id", 0x64)
-        return build_iec104_request(type_id=type_id)
+        kwargs.setdefault("common_addr", self._common_addr)
+        return build_iec104_request(type_id=type_id, common_addr=kwargs["common_addr"])
+
+    def connect(self, host, port, **kwargs) -> bool:
+        self._common_addr = kwargs.get("common_addr", 1)
+        self._timeout = kwargs.get("timeout", 5)
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(self._timeout)
+            s.connect((host, port))
+            startdt = bytes([0x68, 0x04, 0x07, 0x00, 0x00, 0x00])
+            s.sendall(startdt)
+            try:
+                s.recv(1024)
+            except Exception:
+                pass
+            self._sock = s
+            self._connected = True
+            self._persistent = True
+            self._real_host = host
+            self._real_port = port
+            self._conn_failures = 0
+            print(f"[IEC104] 已连接真实设备 {host}:{port} (common_addr={self._common_addr})")
+            return True
+        except Exception as e:
+            print(f"[IEC104] 连接失败: {type(e).__name__}: {e}")
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+            self._connected = False
+            self._sock = None
+            return False
+
+    def disconnect(self) -> None:
+        if self._sock:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+
+    def is_connected(self) -> bool:
+        return self._connected
+
+    def _reconnect(self) -> bool:
+        self.disconnect()
+        if self._real_host and self._real_port:
+            return self.connect(self._real_host, self._real_port, common_addr=self._common_addr, timeout=self._timeout)
+        return False
+
+    def _recv_frame(self, sock):
+        try:
+            header = sock.recv(2)
+            if not header:
+                return b""
+            if len(header) < 2 or header[0] != 0x68:
+                return header
+            length = header[1]
+            remaining = length
+            data = bytearray()
+            while remaining > 0:
+                chunk = sock.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                remaining -= len(chunk)
+            return bytes(header) + bytes(data)
+        except Exception:
+            return None
 
     def send_payload(self, payload, host="127.0.0.1", port=2404, timeout=3):
+        if self._persistent:
+            if not self._connected:
+                if self._conn_failures > 3:
+                    return None
+                if not self._reconnect():
+                    self._conn_failures += 1
+                    return None
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(payload)
+                resp = self._recv_frame(self._sock)
+                if resp is None:
+                    self._connected = False
+                    self._conn_failures += 1
+                    try:
+                        self._sock.close()
+                    except Exception:
+                        pass
+                    self._sock = None
+                    return None
+                if resp == b"":
+                    self._connected = False
+                return resp if resp else None
+            except Exception:
+                self._connected = False
+                self._conn_failures += 1
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+                return None
         return send_iec104_payload(payload, host=host, port=port, timeout=timeout)
 
     def parse_response(self, raw) -> dict:
@@ -160,7 +277,7 @@ class IEC104Client(ProtocolBase):
                 skipped.append({"round": idx, "func_code": fc_str, "reason": "格式无效"})
                 continue
 
-            base_payload = build_iec104_request(type_id=func_code)
+            base_payload = build_iec104_request(type_id=func_code, common_addr=self._common_addr)
             if base_payload is None:
                 reason = f"TypeID 0x{func_code:02X} 基准报文构造失败"
                 print(f"警告：{reason}，跳过")
@@ -216,7 +333,11 @@ class IEC104Client(ProtocolBase):
                     build_failures.append({"func_code": func_code, "stage": "变异报文解析", "reason": reason})
                     continue
 
-                response = send_iec104_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                response = self.send_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                if self._conn_failures > 3:
+                    if stop_event:
+                        stop_event.set()
+                    break
                 response_hex = response.hex() if response else ""
                 classification = self._classify(mutation_bytes, response)
 

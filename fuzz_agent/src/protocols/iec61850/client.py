@@ -1,6 +1,75 @@
 import sys
 import socket
+import struct
 from src.protocols.base import ProtocolBase
+
+
+def _ber_length(length):
+    if length < 0x80:
+        return bytes([length])
+    b = bytearray()
+    while length:
+        b.append(length & 0xFF)
+        length >>= 8
+    b.reverse()
+    return bytes([0x80 | len(b)]) + bytes(b)
+
+
+def _ber_tag(tag, content):
+    return bytes([tag]) + _ber_length(len(content)) + content
+
+
+def _ber_int(value):
+    if value == 0:
+        return b"\x02\x01\x00"
+    b = bytearray()
+    v = value
+    while v:
+        b.append(v & 0xFF)
+        v >>= 8
+    if b[-1] & 0x80:
+        b.append(0)
+    b.reverse()
+    return bytes([0x02, len(b)]) + bytes(b)
+
+
+def _ber_bitstring(bs):
+    return bytes([0x03, len(bs) + 1, 0x00]) + bs
+
+
+def _ctx_constructed(tag, content):
+    return _ber_tag(0xA0 | (tag & 0x1F), content)
+
+
+def _build_mms_initiate():
+    param_support = bytes([0xF4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    services = bytes([0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                      0x00, 0x00, 0x00, 0x00])
+    detail = (
+        _ctx_constructed(1, _ber_int(1)) +
+        _ctx_constructed(2, _ber_bitstring(param_support)) +
+        _ctx_constructed(3, _ber_bitstring(services))
+    )
+    inner = (
+        _ctx_constructed(1, _ber_int(10)) +
+        _ctx_constructed(2, _ber_int(10)) +
+        _ctx_constructed(4, detail)
+    )
+    mms_pdu = _ber_tag(0x68, inner)
+    pdv = (
+        b"\x02\x01\x03" +
+        _ber_tag(0x06, b"\x2a\x86\x48\x86\xf7\x0d\x01") +
+        _ber_tag(0x61, mms_pdu)
+    )
+    presentation = _ber_tag(0x31, pdv)
+    session = b"\x03\x00\x00"
+    user_data = session + presentation
+    cotp = b"\x02\xf0\x80" + user_data
+    tpkt_len = len(cotp) + 4
+    return bytes([0x03, 0x00, (tpkt_len >> 8) & 0xFF, tpkt_len & 0xFF]) + cotp
 
 
 def build_iec61850_request(
@@ -115,6 +184,16 @@ class IEC61850Client(ProtocolBase):
     name = "iec61850"
     default_port = 102
 
+    def __init__(self):
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+        self._ied_ref = None
+        self._timeout = 5
+        self._conn_failures = 0
+
     def get_default_port(self) -> int:
         return self.default_port
 
@@ -125,7 +204,126 @@ class IEC61850Client(ProtocolBase):
         pdu_type = kwargs.get("pdu_type", 0xB0)
         return build_iec61850_request(pdu_type=pdu_type)
 
+    def connect(self, host, port, **kwargs) -> bool:
+        self._ied_ref = kwargs.get("ied_ref", None)
+        self._timeout = kwargs.get("timeout", 5)
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(self._timeout)
+            s.connect((host, port))
+            cotp_cr = bytes([
+                0x03, 0x00, 0x00, 0x16, 0x11, 0xE0, 0x00, 0x00, 0x00, 0x01, 0x00,
+                0xC0, 0x01, 0x0A, 0xC1, 0x02, 0x01, 0x00, 0xC2, 0x02, 0x01, 0x02,
+            ])
+            s.sendall(cotp_cr)
+            try:
+                cc = s.recv(1024)
+            except Exception:
+                cc = b""
+            if not cc or len(cc) < 8:
+                s.close()
+                print("[IEC61850] COTP 连接确认失败")
+                return False
+            initiate = _build_mms_initiate()
+            s.sendall(initiate)
+            try:
+                s.recv(4096)
+            except Exception:
+                pass
+            self._sock = s
+            self._connected = True
+            self._persistent = True
+            self._real_host = host
+            self._real_port = port
+            self._conn_failures = 0
+            print(f"[IEC61850] 已连接真实设备 {host}:{port} (ied_ref={self._ied_ref or 'auto'})")
+            return True
+        except Exception as e:
+            print(f"[IEC61850] 连接失败: {type(e).__name__}: {e}")
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+            self._connected = False
+            self._sock = None
+            return False
+
+    def disconnect(self) -> None:
+        if self._sock:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+
+    def is_connected(self) -> bool:
+        return self._connected
+
+    def _reconnect(self) -> bool:
+        self.disconnect()
+        if self._real_host and self._real_port:
+            return self.connect(self._real_host, self._real_port, ied_ref=self._ied_ref, timeout=self._timeout)
+        return False
+
+    def _recv_frame(self, sock):
+        try:
+            header = sock.recv(4)
+            if not header:
+                return b""
+            if len(header) < 4 or header[0] != 0x03:
+                return header
+            length = (header[2] << 8) | header[3]
+            remaining = length - 4
+            data = bytearray()
+            while remaining > 0:
+                chunk = sock.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                remaining -= len(chunk)
+            return bytes(header) + bytes(data)
+        except Exception:
+            return None
+
     def send_payload(self, payload, host="127.0.0.1", port=102, timeout=3):
+        if self._persistent:
+            if not self._connected:
+                if self._conn_failures > 3:
+                    return None
+                if not self._reconnect():
+                    self._conn_failures += 1
+                    return None
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(payload)
+                resp = self._recv_frame(self._sock)
+                if resp is None:
+                    self._connected = False
+                    self._conn_failures += 1
+                    try:
+                        self._sock.close()
+                    except Exception:
+                        pass
+                    self._sock = None
+                    return None
+                if resp == b"":
+                    self._connected = False
+                return resp if resp else None
+            except Exception:
+                self._connected = False
+                self._conn_failures += 1
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+                return None
         return send_iec61850_payload(payload, host=host, port=port, timeout=timeout)
 
     def parse_response(self, raw) -> dict:
@@ -215,7 +413,11 @@ class IEC61850Client(ProtocolBase):
                     build_failures.append({"func_code": func_code, "stage": "变异报文解析", "reason": reason})
                     continue
 
-                response = send_iec61850_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                response = self.send_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                if self._conn_failures > 3:
+                    if stop_event:
+                        stop_event.set()
+                    break
                 response_hex = response.hex() if response else ""
                 classification = self._classify(mutation_bytes, response)
 

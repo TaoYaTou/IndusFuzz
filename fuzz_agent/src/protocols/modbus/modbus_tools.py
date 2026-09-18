@@ -1,5 +1,10 @@
+import logging
 import socket
 import struct
+
+# 仅用 scapy 构造报文（不抓包），抑制 libpcap 缺失等加载警告
+logging.getLogger("scapy.loading").setLevel(logging.ERROR)
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.layers.inet import IP, TCP
 from scapy.contrib.modbus import (
     ModbusADURequest,

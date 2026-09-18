@@ -6,10 +6,12 @@ import os
 import datetime
 import platform
 import subprocess
+import getpass
 
 sys.dont_write_bytecode = True
 
 from src.core.color_output import print_ok, print_warn, print_error, print_info
+from src.core._resource import app_dir
 
 from src.protocols.registry import get_protocol, list_protocols, auto_load_builtin
 from src.core.report_generator import generate_combined_report
@@ -30,7 +32,7 @@ def _log_exception(context=""):
     """将完整堆栈写入 reports/error.log，终端只打印摘要行。线程安全。"""
     exc_text = traceback.format_exc()
     try:
-        reports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "reports")
+        reports_dir = os.path.join(app_dir(), "reports")
         os.makedirs(reports_dir, exist_ok=True)
         log_path = os.path.join(reports_dir, "error.log")
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -89,6 +91,8 @@ def run(config):
     if not targets:
         legacy_target = config.get("target", "127.0.0.1:5020")
         targets = {p: legacy_target for p in protocols}
+
+    connect_params = config.get("connect_params", {}) or {}
 
     gpu_cfg = config.get("gpu", {})
     gpu_enabled = bool(gpu_cfg.get("enabled", False))
@@ -154,6 +158,47 @@ def run(config):
     all_protocol_data = []
     protocol_errors = []  # 记录超时/异常协议，最后汇总
 
+    if scenario == "production":
+        first_target = next(iter(targets.values()), "未知")
+        print()
+        print("=" * 60)
+        print("⚠️⚠️⚠️  生产环境警告  ⚠️⚠️⚠️")
+        print("=" * 60)
+        print()
+        print("即将对真实工业设备执行模糊测试：")
+        print(f"  目标：{first_target}")
+        print(f"  协议：{', '.join(protocols)}")
+        print(f"  场景：生产环境")
+        print()
+        print("模糊测试会发送畸形报文，可能导致：")
+        print("  - 设备崩溃或重启")
+        print("  - 产线停摆")
+        print("  - 安全事故")
+        print()
+        print("请确认以下事项：")
+        print("  [ ] 已获得设备所有者的书面授权")
+        print("  [ ] 测试网络与生产网络物理隔离")
+        print("  [ ] 已准备好紧急停止方案")
+        print("  [ ] 测试时间窗口已获批准")
+        print()
+        print("=" * 60)
+        try:
+            confirm = getpass.getpass("如全部确认，请输入 YES（必须大写，输入不回显）继续：").strip()
+        except Exception:
+            confirm = ""
+        if confirm != "YES":
+            print("已取消测试。")
+            return
+    elif scenario == "lan":
+        first_target = next(iter(targets.values()), "未知")
+        print()
+        print("=" * 50)
+        print("⚠️  局域网设备测试")
+        print(f"  目标：{first_target}")
+        print(f"  协议：{', '.join(protocols)}")
+        print("  请确认已获得测试授权，且不会影响生产业务")
+        print("=" * 50)
+
     for protocol_name in protocols:
         func_codes = func_codes_map.get(protocol_name, [])
         if not func_codes:
@@ -184,14 +229,33 @@ def run(config):
         fuzz_start = time.time()
         stop_event = threading.Event()
 
+        client_instance = [None]
+
         def _run_in_thread():
             try:
                 protocol_class = get_protocol(protocol_name)
-                protocol_class().run_fuzz(
+                client = protocol_class()
+                client_instance[0] = client
+                if scenario != "local":
+                    proto_params = connect_params.get(protocol_name, {})
+                    extra = dict(proto_params.get("extra", {}))
+                    extra["timeout"] = timeout
+                    ok = client.connect(host, port, **extra)
+                    if not ok:
+                        print(f"⚠️  [{protocol_name}] 连接真实设备失败，跳过该协议")
+                        protocol_errors.append({
+                            "protocol": protocol_name,
+                            "error_type": "connect_failed",
+                            "reason": f"无法连接 {host}:{port}",
+                        })
+                        return
+                client.run_fuzz(
                     func_codes, host, port, timeout,
                     protocol_results, protocol_skipped, protocol_build_failures,
                     llm_status=protocol_llm_status, stop_event=stop_event,
                 )
+                if getattr(client, "_conn_failures", 0) > 3:
+                    print(f"⚠️  [{protocol_name}] 连接中断超过 3 次，剩余用例已跳过")
             except KeyError as e:
                 fuzz_error[0] = ("KeyError", str(e))
                 for idx, fc in enumerate(func_codes, start=1):
@@ -203,6 +267,11 @@ def run(config):
                 fuzz_error[0] = (type(e).__name__, str(e))
                 _log_exception(f"fuzz_loop:{protocol_name}")
             finally:
+                try:
+                    if scenario != "local" and client_instance[0] is not None:
+                        client_instance[0].disconnect()
+                except Exception:
+                    pass
                 fuzz_done[0] = True
 
         t = threading.Thread(target=_run_in_thread, daemon=True)

@@ -56,11 +56,23 @@ def precheck_llm(model_cfg, lang="zh"):
 
     start = time.time()
     try:
-        client = openai.OpenAI(
-            base_url=resolved["base_url"],
-            api_key=resolved["api_key"],
-            timeout=LLM_PRECHECK_TIMEOUT,
-        )
+        base_url = resolved["base_url"]
+        is_local = "localhost" in base_url or "127.0.0.1" in base_url
+        if is_local:
+            import httpx
+            http_client = httpx.Client(trust_env=False, timeout=LLM_PRECHECK_TIMEOUT)
+            client = openai.OpenAI(
+                base_url=base_url,
+                api_key=resolved["api_key"],
+                timeout=LLM_PRECHECK_TIMEOUT,
+                http_client=http_client,
+            )
+        else:
+            client = openai.OpenAI(
+                base_url=base_url,
+                api_key=resolved["api_key"],
+                timeout=LLM_PRECHECK_TIMEOUT,
+            )
         response = client.chat.completions.create(
             model=resolved["name"],
             messages=[{"role": "user", "content": "ping"}],

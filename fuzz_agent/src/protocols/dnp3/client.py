@@ -124,6 +124,17 @@ class DNP3Client(ProtocolBase):
     name = "dnp3"
     default_port = 20000
 
+    def __init__(self):
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+        self._master_addr = 1
+        self._outstation_addr = 10
+        self._timeout = 5
+        self._conn_failures = 0
+
     def get_default_port(self) -> int:
         return self.default_port
 
@@ -133,9 +144,119 @@ class DNP3Client(ProtocolBase):
 
     def build_request(self, **kwargs):
         func_code = kwargs.get("func_code", 0x01)
-        return build_dnp3_request(function_code=func_code)
+        return build_dnp3_request(function_code=func_code, dest=self._outstation_addr, src=self._master_addr)
+
+    def connect(self, host, port, **kwargs) -> bool:
+        self._master_addr = kwargs.get("master_addr", 1)
+        self._outstation_addr = kwargs.get("outstation_addr", 10)
+        self._timeout = kwargs.get("timeout", 5)
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(self._timeout)
+            s.connect((host, port))
+            master = self._master_addr & 0xFFFF
+            outstation = self._outstation_addr & 0xFFFF
+            reset_body = bytes([0x05, 0x64, 0x05, 0xC0]) + struct.pack("<H", outstation) + struct.pack("<H", master)
+            reset = reset_body + struct.pack("<H", _crc16(reset_body))
+            s.sendall(reset)
+            try:
+                s.recv(1024)
+            except Exception:
+                pass
+            self._sock = s
+            self._connected = True
+            self._persistent = True
+            self._real_host = host
+            self._real_port = port
+            self._conn_failures = 0
+            print(f"[DNP3] 已连接真实设备 {host}:{port} (master={self._master_addr}, outstation={self._outstation_addr})")
+            return True
+        except Exception as e:
+            print(f"[DNP3] 连接失败: {type(e).__name__}: {e}")
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+            self._connected = False
+            self._sock = None
+            return False
+
+    def disconnect(self) -> None:
+        if self._sock:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+
+    def is_connected(self) -> bool:
+        return self._connected
+
+    def _reconnect(self) -> bool:
+        self.disconnect()
+        if self._real_host and self._real_port:
+            return self.connect(self._real_host, self._real_port, master_addr=self._master_addr, outstation_addr=self._outstation_addr, timeout=self._timeout)
+        return False
+
+    def _recv_frame(self, sock):
+        try:
+            header = sock.recv(3)
+            if not header:
+                return b""
+            if len(header) < 3 or header[0] != 0x05 or header[1] != 0x64:
+                return header
+            length = header[2]
+            remaining = length + 2
+            data = bytearray()
+            while remaining > 0:
+                chunk = sock.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                remaining -= len(chunk)
+            return bytes(header) + bytes(data)
+        except Exception:
+            return None
 
     def send_payload(self, payload, host="127.0.0.1", port=20000, timeout=3):
+        if self._persistent:
+            if not self._connected:
+                if self._conn_failures > 3:
+                    return None
+                if not self._reconnect():
+                    self._conn_failures += 1
+                    return None
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(payload)
+                resp = self._recv_frame(self._sock)
+                if resp is None:
+                    self._connected = False
+                    self._conn_failures += 1
+                    try:
+                        self._sock.close()
+                    except Exception:
+                        pass
+                    self._sock = None
+                    return None
+                if resp == b"":
+                    self._connected = False
+                return resp if resp else None
+            except Exception:
+                self._connected = False
+                self._conn_failures += 1
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+                return None
         return send_dnp3_payload(payload, host=host, port=port, timeout=timeout)
 
     def parse_response(self, raw) -> dict:
@@ -169,7 +290,7 @@ class DNP3Client(ProtocolBase):
                 skipped.append({"round": idx, "func_code": fc_str, "reason": "格式无效"})
                 continue
 
-            base_payload = build_dnp3_request(function_code=func_code)
+            base_payload = build_dnp3_request(function_code=func_code, dest=self._outstation_addr, src=self._master_addr)
             if base_payload is None:
                 reason = f"功能码 0x{func_code:02X} 基准报文构造失败"
                 print(f"警告：{reason}，跳过")
@@ -225,7 +346,11 @@ class DNP3Client(ProtocolBase):
                     build_failures.append({"func_code": func_code, "stage": "变异报文解析", "reason": reason})
                     continue
 
-                response = send_dnp3_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                response = self.send_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                if self._conn_failures > 3:
+                    if stop_event:
+                        stop_event.set()
+                    break
                 response_hex = response.hex() if response else ""
                 classification = self._classify(mutation_bytes, response)
 

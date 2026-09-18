@@ -4,14 +4,14 @@ from datetime import datetime
 
 from src.core.version import __version__
 from src.core.result_analyzer import analyze_results, _EXCEPTION_CODE_OFFSET
+from src.core._resource import resource_path, app_dir
 
 
 def _esc(text):
     """对拼入 HTML 的用户/外部文本做转义，防止存储型 XSS。"""
     return _html.escape(str(text), quote=True)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-REPORT_DIR = os.path.join(BASE_DIR, "reports")
+REPORT_DIR = os.path.join(app_dir(), "reports")
 
 # xhtml2pdf 中文字体注册（仅注册一次）
 _CN_FONT_REGISTERED = False
@@ -19,23 +19,41 @@ _CN_FONT_PATH = None
 
 
 def _get_cn_font_path():
-    """返回项目内中文字体路径，不存在则尝试从系统复制。"""
+    """返回项目内中文字体路径，不存在则尝试从系统复制。
+
+    PyInstaller 打包后字体位于 sys._MEIPASS（临时目录），xhtml2pdf 的资源策略
+    不允许读取报告目录之外的文件，因此需要将字体复制到项目目录内。
+    """
     global _CN_FONT_PATH
     if _CN_FONT_PATH and os.path.exists(_CN_FONT_PATH):
         return _CN_FONT_PATH
-    # 项目内字体目录
-    local_font = os.path.join(BASE_DIR, "assets", "fonts", "simhei.ttf")
-    if os.path.exists(local_font):
+    local_font = resource_path(os.path.join("assets", "fonts", "simhei.ttf"))
+    # 若字体在临时目录（PyInstaller _MEIPASS），复制到项目目录内供 xhtml2pdf 读取
+    if local_font and os.path.exists(local_font):
+        import shutil
+        # 复制到 reports/ 同级 assets/fonts 目录（项目目录内）
+        target_dir = os.path.join(app_dir(), "assets", "fonts")
+        os.makedirs(target_dir, exist_ok=True)
+        target = os.path.join(target_dir, "simhei.ttf")
+        if not os.path.exists(target):
+            try:
+                shutil.copy2(local_font, target)
+            except Exception:
+                pass
+        if os.path.exists(target):
+            _CN_FONT_PATH = target
+            return _CN_FONT_PATH
         _CN_FONT_PATH = local_font
         return _CN_FONT_PATH
-    # 从系统字体复制
     sys_font = r"C:\Windows\Fonts\simhei.ttf"
     if os.path.exists(sys_font):
         try:
-            os.makedirs(os.path.dirname(local_font), exist_ok=True)
+            target_dir = os.path.join(app_dir(), "assets", "fonts")
+            os.makedirs(target_dir, exist_ok=True)
+            target = os.path.join(target_dir, "simhei.ttf")
             import shutil
-            shutil.copy2(sys_font, local_font)
-            _CN_FONT_PATH = local_font
+            shutil.copy2(sys_font, target)
+            _CN_FONT_PATH = target
             return _CN_FONT_PATH
         except Exception:
             pass
@@ -647,9 +665,19 @@ def _render_timeline_svg(timeline_data):
 
 
 def _render_slave_notice(protocol_name, scenario, lang="zh", slave_mode="strict"):
-    if scenario != "local":
-        return []
     html = []
+    if scenario != "local":
+        if lang == "zh":
+            title = "⚠️ 真实设备测试声明"
+            text = "本报告针对真实工业设备进行测试。测试前已获得设备所有者授权，测试网络与生产网络物理隔离。"
+        else:
+            title = "⚠️ Real Device Testing Notice"
+            text = "This report is based on testing against real industrial equipment. Authorization from the device owner was obtained prior to testing, and the test network is physically isolated from the production network."
+        html.append("<div class='warning-box'>")
+        html.append(f"<strong>{title}</strong><br>")
+        html.append(text)
+        html.append("</div>")
+        return html
     if lang == "zh":
         mode_text = "严格（从站校验请求报文）" if slave_mode == "strict" else "宽松（从站固定响应）"
         html.append(f"<p><strong>模拟从站模式：</strong>{mode_text}</p>")
@@ -748,7 +776,13 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
 
     h.append(f"<h1>{t(f'{protocol_display} 模糊测试报告 / {protocol_display} Fuzz Test Report', f'{protocol_display} Fuzz Test Report')}</h1>")
     h.append(f"<p><strong>{t('生成时间 / Generated', 'Generated')}:</strong> {datetime.now().strftime('%Y%m%d_%H%M%S')} | <strong>{t('版本 / Version', 'Version')}:</strong> {__version__}</p>")
-    h.append(f"<p><strong>{t('目标 / Target', 'Target')}:</strong> {_esc(target)}</p>")
+    if scenario == "local":
+        h.append(f"<p><strong>{t('目标 / Target', 'Target')}:</strong> {_esc(target)}</p>")
+    else:
+        tag = t("（真实设备）", "(Real Device)")
+        h.append(f"<p><strong>{t('目标 / Target', 'Target')}:</strong> {_esc(target)} <span style='color:#d32f2f;font-weight:bold;'>{tag}</span></p>")
+        scenario_label = {"lan": t("局域网", "LAN"), "production": t("生产环境", "Production")}.get(scenario, scenario)
+        h.append(f"<p><strong>{t('场景 / Scenario', 'Scenario')}:</strong> {scenario_label} | <strong>{t('授权 / Authorization', 'Authorization')}:</strong> {t('已确认', 'Confirmed')}</p>")
 
     h.extend(_render_slave_notice(protocol_name, scenario, lang, slave_mode))
 
@@ -902,6 +936,8 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
         h.append(f"<tr><td>NOTE-04</td><td>本报告仅对测试目标 {_esc(target)} 有效</td><td>禁止在未授权的生产环境上运行本工具</td></tr>")
         if scenario == "local":
             h.append(f"<tr><td>NOTE-05</td><td>本测试使用的是协议模拟从站，仅用于连通性验证</td><td>要获得有意义的模糊测试结果，请连接真实设备</td></tr>")
+        else:
+            h.append(f"<tr><td>NOTE-05</td><td>本测试针对真实工业设备，所有变异报文已实际发送至目标</td><td>发现异常响应或连接中断时，需结合设备日志人工确认是否为漏洞</td></tr>")
     else:
         h.append("<tr><td>NOTE-01</td><td>CONN_CLOSED cannot distinguish target rejection from target crash.</td><td>Reproduce high-severity packets to confirm DoS candidates.</td></tr>")
         h.append("<tr><td>NOTE-02</td><td>Missing Npcap on Windows disables Scapy pcap provider.</td><td>Optional. Does not affect socket-based fuzzing.</td></tr>")
@@ -909,6 +945,8 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
         h.append(f"<tr><td>NOTE-04</td><td>This report is valid only for the target {_esc(target)}.</td><td>Do not run this tool against unauthorized production systems.</td></tr>")
         if scenario == "local":
             h.append(f"<tr><td>NOTE-05</td><td>This test was run against a protocol simulator.</td><td>Use a real device for meaningful fuzzing results.</td></tr>")
+        else:
+            h.append(f"<tr><td>NOTE-05</td><td>This test targeted real industrial equipment; all mutated packets were sent to the target.</td><td>When abnormal responses or connection drops occur, cross-check with device logs to confirm vulnerabilities.</td></tr>")
     h.append("</table>")
 
     h.append(f"<h2>{t('数据库比对说明 / Vulnerability Database Notes', 'Vulnerability Database Notes')}</h2>")

@@ -4,11 +4,14 @@ import time
 import socket
 import subprocess
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SERVER_DIR = os.path.join(PROJECT_ROOT, "server")
+from src.core._resource import resource_path
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5020
+
+_SUPPORTED_PROTOCOLS = {
+    "modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua",
+}
 
 
 def _port_open(host, port, timeout=0.5):
@@ -19,11 +22,12 @@ def _port_open(host, port, timeout=0.5):
         return False
 
 
-def _get_slave_script(protocol_name):
-    path = os.path.join(SERVER_DIR, f"{protocol_name}_server.py")
-    if os.path.exists(path):
-        return path
-    return None
+def supports_protocol(protocol_name):
+    return protocol_name in _SUPPORTED_PROTOCOLS
+
+
+def list_supported_protocols():
+    return sorted(_SUPPORTED_PROTOCOLS)
 
 
 def start_slave(protocol_name, host=DEFAULT_HOST, port=DEFAULT_PORT, timeout=10, strict=True):
@@ -31,9 +35,8 @@ def start_slave(protocol_name, host=DEFAULT_HOST, port=DEFAULT_PORT, timeout=10,
         print(f"[从站] 端口 {port} 已被占用，检测是否可连通...")
         return None, f"端口 {port} 已被其他进程占用"
 
-    slave_script = _get_slave_script(protocol_name)
-    if not slave_script:
-        print(f"[从站] server/{protocol_name}_server.py 不存在，跳过启动")
+    if not supports_protocol(protocol_name):
+        print(f"[从站] 协议 {protocol_name} 没有对应的从站脚本")
         return None, f"协议 {protocol_name} 没有对应的从站脚本"
 
     creation_flags = 0
@@ -41,12 +44,16 @@ def start_slave(protocol_name, host=DEFAULT_HOST, port=DEFAULT_PORT, timeout=10,
         creation_flags = subprocess.CREATE_NO_WINDOW
 
     try:
-        cmd = [sys.executable, slave_script, "--port", str(port)]
+        cmd = [
+            sys.executable, "--run-slave",
+            "--protocol", protocol_name,
+            "--host", host,
+            "--port", str(port),
+        ]
         if strict:
             cmd.append("--strict")
         proc = subprocess.Popen(
             cmd,
-            cwd=PROJECT_ROOT,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=creation_flags,
@@ -80,17 +87,3 @@ def stop_slave(proc):
                 pass
         except Exception:
             pass
-
-
-def supports_protocol(protocol_name):
-    return _get_slave_script(protocol_name) is not None
-
-
-def list_supported_protocols():
-    if not os.path.isdir(SERVER_DIR):
-        return []
-    result = []
-    for fname in os.listdir(SERVER_DIR):
-        if fname.endswith("_server.py"):
-            result.append(fname[:-len("_server.py")])
-    return result

@@ -1,4 +1,3 @@
-import sys
 import socket
 import threading
 
@@ -18,24 +17,13 @@ _READ_FUNC_CODES = {0x01, 0x02, 0x03, 0x04}
 
 
 def _parse_args():
-    port = DEFAULT_PORT
-    strict = False
-    args = sys.argv[1:]
-    i = 0
-    while i < len(args):
-        if args[i] == "--port" and i + 1 < len(args):
-            try:
-                port = int(args[i + 1])
-            except ValueError:
-                print(f"[Modbus-从站] 无效端口参数: {args[i + 1]}")
-                sys.exit(1)
-            i += 2
-        elif args[i] == "--strict":
-            strict = True
-            i += 1
-        else:
-            i += 1
-    return port, strict
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default=DEFAULT_HOST)
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    parser.add_argument("--strict", action="store_true")
+    args = parser.parse_args()
+    return args.host, args.port, args.strict
 
 
 def _build_exception_response(data, exception_code=0x01):
@@ -162,5 +150,5 @@ def run_server(host=DEFAULT_HOST, port=DEFAULT_PORT, strict=False):
 
 
 if __name__ == "__main__":
-    port, strict = _parse_args()
-    run_server(DEFAULT_HOST, port, strict)
+    host, port, strict = _parse_args()
+    run_server(host, port, strict)

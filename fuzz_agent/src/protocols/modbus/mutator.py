@@ -1,8 +1,11 @@
 import random
 
-# 合法功能码 + 非法功能码混合池，确保 func_code 变异能同时产生 NORMAL 和 EXCEPTION
-_FUNC_CODE_POOL = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0F, 0x10, 0x2B,
-                   0x5A, 0xA5, 0xFF]
+# 合法功能码池
+_VALID_FUNC_CODES = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x0F, 0x10, 0x2B]
+# 非法功能码池（必触发设备异常响应，用于保证 EXCEPTION 检出）
+_ILLEGAL_FUNC_CODES = [0x5A, 0xA5, 0xFF]
+# 混合池（合法 + 非法）
+_FUNC_CODE_POOL = _VALID_FUNC_CODES + _ILLEGAL_FUNC_CODES
 
 # 独立随机数生成器，避免全局 random 被其他模块干扰导致验证不可复现
 _rng = random.Random()
@@ -21,7 +24,8 @@ def mutate_payload(base_payload):
 
     try:
         mutated = bytearray(base_payload)
-        available_types = ["keep_valid", "func_code", "random_byte"]
+        # illegal_func_code 专用分支：直接写入非法功能码，保证掺码分支必产出 5A/A5/FF
+        available_types = ["keep_valid", "func_code", "illegal_func_code", "random_byte"]
 
         if len(mutated) >= 10:
             available_types.append("start_addr")
@@ -34,6 +38,9 @@ def mutate_payload(base_payload):
             pass
         elif mutation_type == "func_code":
             mutated[7] = _rng.choice(_FUNC_CODE_POOL)
+        elif mutation_type == "illegal_func_code":
+            # M1 掺码分支：强制写入非法功能码，触发设备异常响应
+            mutated[7] = _rng.choice(_ILLEGAL_FUNC_CODES)
         elif mutation_type == "start_addr":
             mutated[8] = _rng.randint(0, 255)
             mutated[9] = _rng.randint(0, 255)

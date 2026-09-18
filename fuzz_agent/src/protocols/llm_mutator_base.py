@@ -4,6 +4,7 @@ import json
 
 try:
     import openai
+    import httpx
     _OPENAI_AVAILABLE = True
 except ImportError:
     _OPENAI_AVAILABLE = False
@@ -133,12 +134,24 @@ def generate_mutations(base_payload_hex, count, prompt, log_prefix="LLM",
         return []
 
     try:
-        client = openai.OpenAI(
-            base_url=resolved["base_url"],
-            api_key=resolved["api_key"],
-            timeout=25,
-            max_retries=0,
-        )
+        base_url = resolved["base_url"]
+        is_local = "localhost" in base_url or "127.0.0.1" in base_url
+        if is_local:
+            http_client = httpx.Client(trust_env=False, timeout=25)
+            client = openai.OpenAI(
+                base_url=base_url,
+                api_key=resolved["api_key"],
+                timeout=25,
+                max_retries=0,
+                http_client=http_client,
+            )
+        else:
+            client = openai.OpenAI(
+                base_url=base_url,
+                api_key=resolved["api_key"],
+                timeout=25,
+                max_retries=0,
+            )
     except Exception as e:
         print(f"[{log_prefix}] 创建客户端失败: {type(e).__name__}: {e}")
         return []

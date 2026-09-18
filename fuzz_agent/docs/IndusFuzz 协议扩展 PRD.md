@@ -1,19 +1,19 @@
-IndusFuzz 协议扩展 PRD（架构重构版 v1.6.0）
+IndusFuzz 协议扩展 PRD（架构重构版 v2.0）
 一、文档信息
 项目	内容
 产品名称	IndusFuzz（工业协议模糊测试智能体）
-当前版本	v1.5.0
-目标版本	v1.6.0（架构重构）
-文档主题	协议扩展架构重构与规范
+当前版本	v2.0.0
+目标版本	v2.0.0（真实设备支持纳入扩展标准）
+文档主题	协议扩展架构重构与规范（含真实设备支持）
 目标读者	后续开发者、协议维护者
-更新日期	2026-09-16（v1.6.3 IEC61850 接入 + 反模式 J）
+更新日期	2026-09-18（v2.0 真实设备支持纳入扩展标准 + 9 方法接口 + 11 步流程 + 17 项清单）
 
 ## 协议扩展 Checklist 执行角色
 
 你是一名资深工业协议实现专家 + Python 工程师，对 Modbus、S7Comm、DNP3、IEC 104/61850、EtherNet/IP、OPC UA 等协议有实际编码经验。执行本 Checklist 时：
 - 每阶段完成后跑对应验证命令，不跳步
 - 发现问题立刻记录反模式到第十六章
-- 阶段 7（全面检查）8 项全过才算完成
+- 阶段 7（全面检查）9 项全过才算完成（7.1~7.9，含 7.9 安全基线回归）
 
 ## 协议扩展检查维度（每个协议都要过）
 
@@ -22,7 +22,7 @@ IndusFuzz 协议扩展 PRD（架构重构版 v1.6.0）
 | 正确性 | build_request 符合协议规范、run_fuzz 签名一致 | 阶段 2/5 |
 | 兼容性 | 新增协议后其他 7 个协议仍能正常跑 | 阶段 7.1/7.6 |
 | 健壮性 | mutator 不越界、llm_mutator 处理空返回/超时/429 | 阶段 2.5/7.7 |
-| 可维护性 | 不引入反模式 A-N 新变种 | 阶段 7.8 |
+| 可维护性 | 不引入反模式 A-Z 新变种 | 阶段 7.8 |
 | 一致性 | func_codes -> client -> mutator -> server -> report_generator 五处数量一致 | 阶段 5.2 + 十七章 |
 
 二、v1.6.0 五项架构改进
@@ -40,68 +40,118 @@ fuzz_agent/
 │   ├── protocols/
 │   │   ├── __init__.py
 │   │   ├── base.py                         # ProtocolBase（含 run_fuzz 抽象方法）
-│   │   ├── registry.py
-│   │   ├── func_codes/                     # 功能码 JSON（自动扫描）
+│   │   ├── registry.py                     # register_protocol() + auto_load_builtin()
+│   │   ├── llm_mutator_base.py             # LLM 变异基类（timeout/retry/错误分类/长度校验/None 防护统一收敛）
+│   │   ├── func_codes/                     # 功能码 JSON（自动扫描，共 7 个）
 │   │   │   ├── modbus_func_codes.json
 │   │   │   ├── s7comm_func_codes.json
-│   │   │   └── <新协议>_func_codes.json
+│   │   │   ├── dnp3_func_codes.json
+│   │   │   ├── iec104_func_codes.json
+│   │   │   ├── iec61850_func_codes.json
+│   │   │   ├── enip_func_codes.json
+│   │   │   └── opcua_func_codes.json
 │   │   ├── modbus/
 │   │   │   ├── __init__.py
-│   │   │   ├── modbus_client.py
-│   │   │   ├── modbus_tools.py
+│   │   │   ├── client.py                   # 含 run_fuzz 实现
+│   │   │   ├── modbus_tools.py             # Modbus 报文构造/发送工具
 │   │   │   ├── mutator.py
-│   │   │   ├── llm_mutator.py
-│   │   │   └── client.py                   # 含 run_fuzz 实现
+│   │   │   └── llm_mutator.py              # 薄壳，委托 llm_mutator_base
 │   │   ├── s7comm/
 │   │   │   ├── __init__.py
 │   │   │   ├── client.py                   # 含 run_fuzz 实现
 │   │   │   ├── mutator.py
 │   │   │   └── llm_mutator.py
-│   │   └── <新协议>/
+│   │   ├── dnp3/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py
+│   │   │   ├── mutator.py
+│   │   │   └── llm_mutator.py
+│   │   ├── iec104/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py
+│   │   │   ├── mutator.py
+│   │   │   └── llm_mutator.py
+│   │   ├── iec61850/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py
+│   │   │   ├── mutator.py
+│   │   │   └── llm_mutator.py
+│   │   ├── enip/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py
+│   │   │   ├── mutator.py
+│   │   │   └── llm_mutator.py
+│   │   ├── opcua/
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py
+│   │   │   ├── mutator.py
+│   │   │   └── llm_mutator.py
+│   │   └── <新协议>/                        # 新增协议按此模板
 │   │       ├── __init__.py
 │   │       ├── client.py
 │   │       ├── mutator.py
 │   │       └── llm_mutator.py
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── menu.py                         # 自动扫描 func_codes/
-│   │   ├── fuzz_loop_llm.py                # 通用 run()，无 if-elif
-│   │   ├── result_analyzer.py
-│   │   ├── report_generator.py             # 集中配置 PROTOCOL_CONFIG
-│   │   ├── slave_launcher.py               # 自动按约定路径查找
-│   │   └── diagnose.py
-│   └── integrations/
+│   │   ├── version.py                      # 版本号唯一来源
+│   │   ├── menu.py                         # 自动扫描 func_codes/，6 步交互向导
+│   │   ├── fuzz_loop_llm.py                # 通用 run()，无 if-elif，含超时熔断
+│   │   ├── result_analyzer.py              # 结果统计分析
+│   │   ├── report_generator.py             # HTML/PDF/LOG 报告，PROTOCOL_CONFIG 集中配置
+│   │   ├── slave_launcher.py               # 自动按 server/<name>_server.py 约定路径查找
+│   │   ├── diagnose.py                     # 连通性诊断
+│   │   ├── security.py                     # DPAPI 加密 API Key + HTTPS 强制 + 打码
+│   │   ├── llm_precheck.py                 # LLM 连通性预检 + 端口连通性检查
+│   │   ├── llm_status.py                   # 每协议 LLM 调用状态收集
+│   │   ├── runtime_config.py               # 全局运行时开关（如 GPU）
+│   │   ├── gpu_detector.py                 # GPU 检测（nvidia-smi / torch）
+│   │   └── color_output.py                 # ANSI 彩色输出（Windows VT 降级）
+│   └── integrations/                       # MCP 工具链（桩文件，开发中）
 │       ├── __init__.py
 │       ├── vulnclaw_mcp.py
 │       ├── codeguard_mcp.py
 │       └── codeinspectus_mcp.py
 ├── config/
-│   ├── __init__.py
-│   ├── default.yaml
-│   └── protocols/
-│       ├── modbus.yaml
-│       ├── s7comm.yaml
-│       └── <新协议>.yaml
+│   └── __init__.py            # config 包（运行配置在 src/core/runtime_config.py）
 ├── server/
 │   ├── __init__.py
-│   ├── modbus_server.py                    # 支持 --strict
-│   ├── s7comm_server.py                    # 支持 --strict
-│   └── <新协议>_server.py                  # 支持 --strict
+│   ├── modbus_server.py                    # 支持 --port --strict
+│   ├── s7comm_server.py
+│   ├── dnp3_server.py
+│   ├── iec104_server.py
+│   ├── iec61850_server.py
+│   ├── enip_server.py
+│   ├── opcua_server.py
+│   └── <新协议>_server.py
 ├── tools/
-│   └── check_protocol.py                   # 【新增】协议自检工具
+│   ├── check_protocol.py                   # 协议自检工具（11 项检查）
+│   └── clean_before_release.py             # 发布前清理临时/报告文件
 ├── tests/
 │   ├── __init__.py
+│   ├── fuzz_loop.py                        # fuzz_loop 单元测试
 │   ├── test_tools.py
 │   ├── test_mutator.py
-│   └── test_reporter.py
-├── reports/
-│   └── .gitkeep
+│   ├── test_reporter.py
+│   ├── verify_fuzz_flow.py                 # 完整 fuzz 流程验证
+│   ├── verify_combined_report.py           # 合并报告验证
+│   ├── verify_error_report.py              # 错误报告验证
+│   ├── verify_fixes.py                     # 修复点验证
+│   ├── verify_gpu.py
+│   ├── verify_phase7_static.py
+│   ├── verify_strict_e2e.py
+│   ├── verify_strict_wiring.py
+│   └── legacy/                             # 遗留测试脚本
+├── reports/                                # 生成的报告
+├── assets/
+│   ├── fonts/simhei.ttf                    # PDF 中文字体
+│   └── concept_a_hex/                      # 应用 Logo 图标
 ├── docs/
-│   ├── PRD.md
-│   ├── mcp-integration.md
-│   └── protocol-guide.md
+│   ├── IndusFuzz 协议扩展 PRD.md            # 本文档
+│   ├── IndusFuzz 审计PRD.md
+│   └── IndusFuzz 审计修复总结PRD.md
 ├── main.py
 ├── requirements.txt
+├── start_fuzz.bat
 ├── modbus_fuzzer.spec
 ├── .gitignore
 └── README.md
@@ -967,154 +1017,209 @@ text
 ============================================================
   自检通过：所有项目正常
 ============================================================
-九、新增协议完整流程（v1.6.0 版）
-新增 DNP3 为例，共 10 步（比 v1.5.0 少 1 步，因为不再需要改 menu.py 和 slave_launcher.py）。
+九、新增协议完整流程（v2.0 版，含真实设备支持）
 
-步骤 1：创建协议目录
-powershell
-mkdir src\protocols\dnp3
-步骤 2：编写功能码 JSON
-新建 src/protocols/func_codes/dnp3_func_codes.json：
+> v2.0 起，新增协议必须一步到位支持真实设备。不再有"只写模拟从站"的过渡阶段。
+> 当前 7 个协议（modbus/s7comm/dnp3/iec104/iec61850/enip/opcua）已全部支持真实设备。
 
-json
-{
-  "protocol": "dnp3",
-  "default_port": 20000,
-  "func_codes": [
-    {"code": "0x01", "name": "Read"},
-    {"code": "0x02", "name": "Write"},
-    {"code": "0x03", "name": "Select"},
-    {"code": "0x04", "name": "Operate"},
-    {"code": "0x05", "name": "Direct Operate"},
-    {"code": "0x0D", "name": "Cold Restart"},
-    {"code": "0x0E", "name": "Warm Restart"},
-    {"code": "0x0F", "name": "Initialize Data"},
-    {"code": "0x12", "name": "Stop Application"}
-  ]
-}
-步骤 3：实现 client.py（含 run_fuzz）
-复制 s7comm/client.py，修改：
+### v1.0 → v2.0 关键差异
 
-类名 → DNP3Client
+| 项 | v1.0（旧） | v2.0（新） |
+|----|-----------|-----------|
+| 协议抽象接口 | 6 个方法 | 9 个方法（+connect/disconnect/is_connected） |
+| send_payload | 无状态 socket | 双模式（持久连接 + 无状态回退） |
+| menu.py | 只需注册协议名 | 需同步加连接参数配置表 |
+| README | 只需说明协议 | 需同步加真实设备测试指南 |
+| 检查清单 | 11 项 | 17 项 |
 
-name = "dnp3"
+### 9 个抽象方法（base.py:ProtocolBase）
 
-default_port = 20000
+```python
+class ProtocolBase:
+    # ===== 基础方法（6 个） =====
+    def build_request(self, **kwargs) -> bytes: ...
+    def send_payload(self, payload, host, port) -> bytes: ...
+    def parse_response(self, raw) -> dict: ...
+    def get_default_port(self) -> int: ...
+    def get_func_codes(self) -> list: ...
+    def run_fuzz(self, func_codes, host, port, timeout, results, skipped, build_failures, llm_status=None, stop_event=None) -> None: ...
 
-build_request 报文构造
+    # ===== 真实设备支持（v2.0 新增 3 个） =====
+    def connect(self, host, port, **kwargs) -> bool:
+        """建立持久 TCP 连接 + 协议握手"""
+    def disconnect(self) -> None:
+        """关闭持久连接，清理状态"""
+    def is_connected(self) -> bool:
+        """返回当前连接状态"""
+```
 
-run_fuzz 里的 _classify 逻辑
+### 各协议握手内容（connect 必须实现）
 
-日志前缀 [DNP3] / [DNP3-LLM]
+| 协议 | 握手内容 |
+|------|----------|
+| Modbus TCP | TCP 连接 + 连通性验证 |
+| S7Comm | TCP + COTP CR→CC + S7 Setup |
+| DNP3 | TCP + 链路重置 |
+| IEC 104 | TCP + STARTDT act→con |
+| IEC 61850 | TCP + MMS Initiate |
+| EtherNet/IP | TCP + RegisterSession |
+| OPC UA | TCP + HEL→ACK |
 
-步骤 4：实现 mutator.py（参照 Modbus）
-复制 modbus/mutator.py，改功能码池和字节偏移量：
+### 双模式 send_payload（必须实现）
 
-python
-_FUNC_CODE_POOL = [0x01, 0x02, 0x03, 0x04, 0x05, 0x0D, 0x0E, 0x12]
-# ...
-mutated[11] = random.choice(_FUNC_CODE_POOL)
-步骤 5：实现 llm_mutator.py（复制 S7comm）
-复制 s7comm/llm_mutator.py，改：
+```python
+def send_payload(self, payload, host=None, port=None):
+    if self._persistent and self._sock:
+        # 真实设备：复用持久连接
+        try:
+            self._sock.sendall(payload)
+            return self._recv_frame()  # 按协议帧长循环接收
+        except Exception:
+            self._conn_failures += 1
+            if self._conn_failures > 3:
+                return None
+            self._reconnect()
+    else:
+        # 模拟从站：无状态 socket
+        ...
+```
 
-日志前缀 [DNP3-LLM]
+### 11 步流程
 
-prompt 里 S7comm protocol message → DNP3 protocol message
+**步骤 1：创建协议目录**
+```
+src/protocols/<name>/
+├── __init__.py
+├── client.py
+├── mutator.py
+└── llm_mutator.py
+```
 
-步骤 6：注册协议（__init__.py）
-python
+**步骤 2：编写功能码定义 JSON**
+`src/protocols/func_codes/<name>_func_codes.json`
+格式：`protocol` / `default_port` / `func_codes` 三个必填字段。
+
+**步骤 3：实现 client.py（含 9 个方法）**
+必须实现 9 个方法（见上方）。重点：
+- connect 必须实现协议握手（参照上方握手表）
+- send_payload 必须双模式（persistent + 无状态回退）
+- _recv_frame 必须按协议帧长循环接收（不能一次性 recv(4096) 然后截断）
+- 失败熔断：连续 >3 次连接失败则放弃，不再重连
+- kwargs 必须贯穿（unit_id/timeout/endpoint/rack/slot 等协议特异参数）
+
+**步骤 4：实现 mutator.py**
+参照 modbus/mutator.py，改两处：功能码池 + 关键字节偏移量。
+功能码池必须含非法码（0x5A/0xA5/0xFF），否则从站永远返回 NORMAL（反模式 S）。
+
+**步骤 5：实现 llm_mutator.py**
+复制任一现有协议的 llm_mutator.py（薄壳），改三处：
+日志前缀 [<协议名>-LLM] / prompt 协议名 / prompt 变异策略。
+注意：OpenAI client 构造、超时、重试、错误分类全部在基类 llm_mutator_base.py，薄壳不要自己写。
+
+**步骤 6：注册协议**
+`src/protocols/<name>/__init__.py`：
+```python
 from src.protocols.registry import register_protocol
-from src.protocols.dnp3.client import DNP3Client
+from src.protocols.<name>.client import XxxClient
+register_protocol("<name>", XxxClient)
+```
 
-register_protocol("dnp3", DNP3Client)
-
-__all__ = ["DNP3Client"]
-步骤 7：在 report_generator.py 添加配置
-在 PROTOCOL_CONFIG 里加 "dnp3" 条目：
-
-python
-"dnp3": {
-    "display_name": "DNP3",
-    "func_name_map": {
-        0x01: "Read",
-        0x02: "Write",
-        0x03: "Select",
-        0x04: "Operate",
-        0x05: "Direct Operate",
-        0x0D: "Cold Restart",
-        0x0E: "Warm Restart",
-        0x0F: "Initialize Data",
-        0x12: "Stop Application",
+**步骤 7：menu.py 注册连接参数（v2.0 新增）**
+在 menu.py 的 PROTOCOL_CONNECT_PARAMS 里加上新协议的参数：
+```python
+PROTOCOL_CONNECT_PARAMS = {
+    "<name>": {
+        "display_name": "协议显示名",
+        "params": [
+            {"key": "host", "label": "设备 IP", "required": True},
+            {"key": "port", "label": "端口", "default": 默认端口},
+            {"key": "xxx", "label": "协议特异参数名", "default": 默认值},
+        ]
     },
-    "write_funcs": {0x02, 0x03, 0x04, 0x05},
-    "critical_funcs": {0x0D, 0x0E, 0x0F, 0x12},
-    "slave_note": {
-        "zh": "本报告使用本地 DNP3 模拟从站进行测试。模拟从站仅用于连通性测试和报文格式验证。要获得有意义的模糊测试结果，需要连接真实的 DNP3 设备。",
-        "en": "This report was generated against a local DNP3 simulator. The simulator is intended only for connectivity testing and message format validation. Meaningful fuzzing results require a real DNP3 device.",
-    },
-},
-步骤 8：创建模拟从站
-新建 server/dnp3_server.py，复制 s7comm_server.py，修改：
+}
+```
+同时在 menu.py 的 PROTOCOL_CONNECT_PARAMS 里加新协议的连接参数（参照已有协议）。
 
-默认端口 → 20000
+**步骤 8：slave_launcher.py 注册从站**
+在 PROTOCOL_SLAVE_SCRIPTS 里加一行：`"<name>": "server/<name>_server.py"`。
+（若 slave_launcher 已自动扫描，跳过此步，但需验证自动发现正确。）
 
-响应格式按 DNP3 规范调整
+**步骤 9：fuzz_loop_llm.py 通用分支**
+真实设备分支已有通用逻辑，无需额外修改。只需确认新协议通过 registry 被统一调用。
 
-保留 --port 和 --strict 参数
+**步骤 10：report_generator.py 加配置**
+在 PROTOCOL_CONFIG 里加一条，含 display_name / func_name_map / write_funcs / critical_funcs / slave_note。
 
-步骤 9：运行自检
-powershell
-python tools/check_protocol.py dnp3
-必须全部 [OK] 或允许 [WARN]，[FAIL] 必须修复。
+**步骤 11：README 加真实设备测试指南（v2.0 新增）**
+在 README.md 和 README.zh.md 的"真实设备测试指南"章节，补充新协议的：
+- 连接参数表（必填项 + 默认值）
+- 设备兼容性（支持哪些设备型号）
+- 失败排查（该协议特有的错误码）
 
-步骤 10：启动测试
-powershell
-python main.py
-菜单应自动出现 DNP3 选项（因为 menu.py 自动扫描 func_codes/）。
+十、新增协议检查清单（v2.0 版，17 项）
 
-十、新增协议检查清单（v1.6.0 版）
-#	项目	文件	必填	v1.5.0 是否需要改核心代码
-1	协议目录	src/protocols/<name>/	✅	—
-2	功能码 JSON	func_codes/<name>_func_codes.json	✅	—
-3	__init__.py 注册	src/protocols/<name>/__init__.py	✅	—
-4	client.py（含 run_fuzz）	src/protocols/<name>/client.py	✅	—
-5	mutator.py	src/protocols/<name>/mutator.py	✅	—
-6	llm_mutator.py	src/protocols/<name>/llm_mutator.py	✅	—
-7	报告配置	PROTOCOL_CONFIG	✅	v1.6.0 集中一处
-8	模拟从站	server/<name>_server.py	可选	—
-9	配置 YAML	config/protocols/<name>.yaml	可选	—
-10	单元测试	tests/test_<name>.py	可选	—
-v1.6.0 相比 v1.5.0 的简化：
+| # | 项目 | 文件 | 必填 | 说明 |
+|---|------|------|------|------|
+| 1 | 协议目录 | src/protocols/<name>/ | ✅ | 4 个文件 |
+| 2 | 功能码 JSON | src/protocols/func_codes/<name>_func_codes.json | ✅ | protocol/default_port/func_codes |
+| 3 | __init__.py 注册 | src/protocols/<name>/__init__.py | ✅ | register_protocol |
+| 4 | build_request | client.py | ✅ | 报文构造 |
+| 5 | send_payload（双模式） | client.py | ✅ | persistent + 无状态回退 |
+| 6 | parse_response | client.py | ✅ | 响应解析 |
+| 7 | get_default_port | client.py | ✅ | 默认端口 |
+| 8 | get_func_codes | client.py | ✅ | 功能码列表 |
+| 9 | run_fuzz | client.py | ✅ | 模糊测试主循环 |
+| 10 | connect + disconnect + is_connected | client.py | ✅ | v2.0 新增，真实设备连接生命周期 |
+| 11 | mutator.py | src/protocols/<name>/mutator.py | ✅ | 含非法码池 |
+| 12 | llm_mutator.py | src/protocols/<name>/llm_mutator.py | ✅ | 薄壳，基类处理 LLM |
+| 13 | menu.py 连接参数注册 | src/core/menu.py | ✅ | v2.0 新增，PROTOCOL_CONNECT_PARAMS |
+| 14 | slave_launcher.py 注册 | src/core/slave_launcher.py | ✅ | PROTOCOL_SLAVE_SCRIPTS（或自动扫描验证） |
+| 15 | fuzz_loop 测试分支 | src/core/fuzz_loop_llm.py | ✅ | 通用分支，registry 统一调用 |
+| 16 | report_generator 配置 | src/core/report_generator.py | ✅ | PROTOCOL_CONFIG 条目 |
+| 17 | README 真实设备指南 | README.md + README.zh.md | ✅ | v2.0 新增，连接参数表 + 兼容性 + 故障排查 |
 
-项目	v1.5.0	v1.6.0
-menu.py 需手改 PROTOCOL_META	✅ 需要	❌ 自动扫描
-slave_launcher.py 需手改 PROTOCOL_SLAVE_SCRIPTS	✅ 需要	❌ 自动查找
-fuzz_loop_llm.py 需新增 _run_xxx	✅ 需要	❌ 只调用 run_fuzz
-report_generator.py 4 处分散配置	✅ 需要	❌ 集中 PROTOCOL_CONFIG
-自检工具	❌ 无	✅ tools/check_protocol.py
-十一、模板复用速查表
-新协议文件	复制自	需要修改
-client.py	s7comm/client.py	类名、协议名、端口、报文构造、run_fuzz
-mutator.py	modbus/mutator.py	功能码池、字节偏移量
-llm_mutator.py	s7comm/llm_mutator.py	日志前缀、prompt 协议名
-__init__.py	s7comm/__init__.py	类名、协议名
-server/<name>_server.py	server/s7comm_server.py	响应格式、默认端口
-PROTOCOL_CONFIG 条目	PROTOCOL_CONFIG["s7comm"]	功能码映射、write/critical 集合、slave_note
-十二、验证流程
-powershell
-# 1. 自检新协议
+v1.0 → v2.0 简化与强化：
+
+| 项目 | v1.0 | v2.0 |
+|------|------|------|
+| menu.py 需手改 PROTOCOL_META | ✅ 需要 | ❌ 自动扫描（但需手加 PROTOCOL_CONNECT_PARAMS） |
+| slave_launcher.py 需手改 | ✅ 需要 | ❌ 自动查找（需验证） |
+| fuzz_loop_llm.py 需新增 _run_xxx | ✅ 需要 | ❌ 只调用 run_fuzz |
+| report_generator.py 4 处分散配置 | ✅ 需要 | ❌ 集中 PROTOCOL_CONFIG |
+| 自检工具 | ❌ 无 | ✅ tools/check_protocol.py |
+| 真实设备支持 | ❌ 无 | ✅ 9 方法接口 + 17 项清单 |
+十一、模板复用速查表（v2.0）
+
+| 新协议文件 | 复制自 | 需要修改 |
+|-----------|--------|----------|
+| client.py | s7comm/client.py | 类名、协议名、端口、报文构造、run_fuzz、connect 握手、disconnect、_recv_frame 帧长 |
+| mutator.py | modbus/mutator.py | 功能码池（含非法码）、字节偏移量 |
+| llm_mutator.py | 任一薄壳 | 日志前缀、prompt 协议名 |
+| __init__.py | s7comm/__init__.py | 类名、协议名 |
+| server/<name>_server.py | server/s7comm_server.py | 响应格式、默认端口、argparse 三参数 |
+| PROTOCOL_CONFIG 条目 | PROTOCOL_CONFIG["s7comm"] | 功能码映射、write/critical 集合、slave_note |
+| PROTOCOL_CONNECT_PARAMS 条目 | menu.py 中 s7comm | display_name、params 列表 |
+
+十二、验证流程（v2.0）
+
+```bash
+# 1. 协议自检
 python tools/check_protocol.py <name>
 
-# 2. 启动主程序
-python main.py
+# 2. 模拟从站流程
+python tests/verify_fuzz_flow.py --protocol <name>
 
-# 3. 菜单应自动出现新协议
-# 4. 选择新协议 → 选功能码 → 本机自测
-# 5. 观察：
-#    - 从站是否自动启动（端口 <default_port>）
-#    - 报告文件是否生成（report_<name>_*.html / .pdf）
-#    - 报告标题、功能码名称是否正确
-#    - 模拟从站说明是否出现
+# 3. 启动从站测试
+python server/<name>_server.py --strict
+
+# 4. 真实设备连接测试（可选但强烈建议）
+# 用局域网内一台不关键的设备测试 connect 是否成功
+python -c "from src.protocols.<name>.client import XxxClient; c=XxxClient(); print(c.connect('设备IP', 端口))"
+
+# 5. 菜单显示测试
+python main.py
+# 选 lan 场景，看新协议是否出现在列表中，连接参数表单是否正确渲染
+```
 十三、目录规范约定
 类别	约定
 协议目录名	全小写，与 JSON 的 protocol 字段一致
@@ -1132,7 +1237,12 @@ v1.6.0	架构重构（5 项改进）	✅ 已完成（2026-09-16）
 v1.6.1	DNP3 接入 + 反模式 E-H + 十七/十八章（多位置一致性清单 + Checklist）	✅ 已完成（2026-09-16）
 v1.6.2	IEC 60870-5-104 接入 + 反模式 I	✅ 已完成（2026-09-16）
 v1.6.3	IEC 61850 MMS 接入 + 反模式 J	✅ 已完成（2026-09-16）
-v2.0.0	桌面端（Tauri / PyQt）+ 多协议并行	📋 规划中
+v1.7.0	7 协议全量 + ENIP/OPC UA + 反模式 K-N + LLMStatus/security/DPAPI	✅ 已完成
+v1.7.1	llm_mutator 基类化重构 + color_output + stop_event + 反模式 O-W（6 轮审计全闭环）	✅ 已完成（2026-09-17）
+v1.7.2	第 7 轮六层审计 + L1/L2 一致性修复 + 反模式 X-Y（从站 CLI 接口统一、基类签名对齐）	✅ 已完成（2026-09-18）
+v1.8.0	真实 PLC 设备适配（connect/disconnect/is_connected 连接生命周期、persistent 长连接+失败熔断、_recv_frame 帧循环接收、kwargs 贯穿）+ 第 8-10 轮审计闭环 + 反模式 Z（测试 mock 打错模块层级）+ 反模式 K 收尾（4 协议循环变量统一 func_code）	✅ 已完成（2026-09-18）
+v2.0.0	真实设备支持纳入扩展标准（9 方法接口 + 11 步流程 + 17 项清单 + menu.py PROTOCOL_CONNECT_PARAMS + README 真机指南）	✅ 已完成（2026-09-18）
+v2.1.0	桌面端（Tauri / PyQt）+ 多协议并行	📋 规划中
 十五、附录：常见问题
 Q1：新增协议后菜单没显示？
 运行 python tools/check_protocol.py <name> 检查。重点看 func_codes JSON 是否存在、func_codes 字段是否非空。
@@ -1324,6 +1434,158 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 - 整体协议超时固定 120 秒（代码常量 PROTOCOL_FUZZ_TIMEOUT=120，可在 config 里调），超时后自动写 `reports/error_report_<timestamp>.json`，含错误类型、当前 LLM 配置、针对性建议
 - error_report 必须**即使超时也要生成**：已收集的 results 仍然走 generate_report，让用户看到已跑的那部分结果 + 警示
 
+#### 反模式 O：写了代码但从未运行验证的假修复
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| modbus_server 启动即 TypeError（`handler=` 参数 pymodbus 3.15 不支持） | 改了代码但没跑过启动命令，以为"语法对=能跑" | 任何修复必须附实测命令与输出；server 改完必须 `python server/<name>_server.py --port <x>` 实测启动 |
+| result_analyzer 分发表永不命中（protocol 字段缺失） | 只改了调用方没改数据结构，没跑过端到端 | 验证脚本不得只覆盖单协议；改数据结构必须跑全协议 fuzz 验证分发命中 |
+
+**防护**：
+- 修复后必须跑实测命令并贴输出，不接受"应该能跑"
+- 涉及多协议的改动（如 result_analyzer 分发），验证脚本必须覆盖所有协议
+- 改 server.py 必须实测启动 + 连接 + 收发，不只是 `compileall`
+
+#### 反模式 P：验证依赖随机性（flaky test）
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| modbus verify ≈30% 通过率被当成 5/5 PASS | mutator 用 `random.choice` 选功能码，白名单全合法时偶发全 NORMAL | 随机路径须固定 seed（`random.seed(42)`）；关键验证连续跑 ≥5 次 |
+
+**防护**：
+- verify_fuzz_flow.py 必须 `random.seed(固定值)` 保证确定性
+- 涉及随机逻辑的修复连续跑 ≥5 次，全绿才算通过
+- 新增协议的 mutator 若用 random，测试时必须可复现
+
+#### 反模式 Q：加密操作缺幂等保护
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| store_api_key 对密文二次加密 → 复用"上次选择"即 401 自毁 | 加密入口没判断是否已是密文，用户复用配置时重复加密 | 加密入口必须先 `is_encrypted()` 判断；"配置→保存→重启→复用配置→fuzz"全链路必须回归 |
+
+**防护**：
+- `security.encrypt_key()` 前先 `is_encrypted()` 检查
+- 涉及 security/config 的改动必须跑：输入 key → 保存 → 重启程序 → 选"上次选择" → fuzz，无 401
+- 新增协议不涉及 security，但改 report_generator 时注意不要碰 config 读写逻辑
+
+#### 反模式 R：功能码集合多处手动维护必漂移
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| server 白名单 16 vs JSON 19（漏 0x08/0x0B/0x0C） | 白名单手抄时漏行，改 JSON 没同步改 server | 白名单从 func_codes JSON 单一来源生成，禁止手抄 |
+
+**防护**：
+- 新增协议时，server 的 `_KNOWN_FUNCS` / `_REQUEST_TYPES` 从 JSON 读取生成，不手动写死
+- 改完跑断言：`assert set(json_codes) == set(server_request_types)`
+- （详见十七章多位置一致性清单）
+
+#### 反模式 S：仿真器校验面收窄导致检出能力退化
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| 弃 pymodbus 自实现 socket 后只校验功能码，数据区错误全 NORMAL | 重写从站时丢了旧实现的异常触发面（quantity>0x7D 等） | 重写从站时须比对旧实现的异常触发面；变异器与从站白名单需联合设计（功能码池须含非法码 0x5A/0xA5/0xFF） |
+
+**防护**：
+- 新增/重写 server 时，列出旧实现所有会触发异常的条件，逐一保留
+- mutator 的 `_FUNC_CODE_POOL` 必须含非法码（如 0x5A/0xA5/0xFF），否则从站永远返回 NORMAL
+- verify 时确认至少有 EXCEPTION 或 CONN_CLOSED 分类出现
+
+#### 反模式 T：HTML 拼接点转义遗漏在新路径复发 → 存储型 XSS
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| `target`（用户自由输入的 host:port）可注入 `<script>` | 直接 `f"... {target} ..."` 拼 HTML，未 `html.escape` | 所有进入 HTML 的外部文本先过 `_esc()` 辅助函数（`html.escape(str, quote=True)`） |
+| `protocol_errors` 的 `reason`/`error_msg` 含云端 API 返回内容（str(e)），可含 `<script>`/`<img onerror>` | str(e) 来源不可控，与 llm_status 的转义策略不一致（P2-007 同类问题在新整合路径复发） | 合并报告 zh/en 两版 + `generate_error_report` 共 3 处 reason 全部 `_esc()`，protocol 名也转义 |
+| `skipped`/`build_failures` 的 `reason` 未转义 | reason 来自 client.py 的 `skip.append({"reason": "..."})` 或异常 str | 两处 reason 全部 `_esc()` |
+| `gpu_summary` 未转义 | GPU 信息来自 subprocess 输出，理论上可控 | 提取后 `_esc()` 再拼 HTML |
+
+**必须转义的文本清单**（新增协议/改报告时逐项核对）：
+| 文本来源 | 变量示例 | 风险 |
+|----------|----------|------|
+| 用户输入 target | `target` / `host:port` | 存储型 XSS（本地报告） |
+| 异常字符串 str(e) | `reason` / `error_msg` | 云端 API 返回内容注入 |
+| skipped 原因 | `skipped[i]["reason"]` | client 侧自由文本 |
+| build_failures 原因 | `build_failures[i]["reason"]` | 同上 |
+| GPU 摘要 | `gpu_summary` | subprocess 输出 |
+
+**防护**：
+- report_generator.py 顶部定义 `_esc = lambda s: html.escape(str(s), quote=True)`，所有拼 HTML 的外部文本先过它
+- `report_generator.py 不导入 color_output`（防止 ANSI 转义码泄漏进 HTML）
+- 新增协议时，PROTOCOL_CONFIG 的 `slave_note` / `display_name` 虽然是开发者写的、通常可信，但仍然建议走 `_esc()` 形成统一习惯
+- 复审时 grep 新增 f-string 拼接点核对转义覆盖
+- 验证：构造含 `<script>alert(1)</script>` 的 target / reason 跑一次报告生成，`grep -c '<script>' reports/report_*.html` 必须 = 0
+
+#### 反模式 U：llm_mutator prompt 承诺等长但不校验 → 变异长度失控
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| LLM 返回任意长度的 hex 都被发送给目标设备 | prompt 里写了 "Keep same total length" 但 `_clean_line` 只做格式清洗不校验长度 | 用 `base_payload_hex` 算 `base_len = len(base_payload_hex)`，长度超出 `[base_len//2, base_len*2]` 的变异丢弃并告警 |
+| `base_payload_hex` 参数传入后闲置（死参数） | 函数签名有这个参数但函数体没用 | 启用它做长度校验的基准，参数不再是死参数 |
+
+**防护**：
+- llm_mutator_base.py 的 `generate_mutations()` 必须用 `base_payload_hex` 算长度区间
+- 新协议的 llm_mutator 薄壳调用基类时必须传 `base_payload_hex=base_hex`
+- 验证：mock 一个返回超长/超短 hex 的 LLM 响应，确认该条被丢弃且 `on_error` 被调用
+
+#### 反模式 V：OpenAI SDK max_retries 未清零 → 重试叠加加剧限流
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| 429 场景下单个功能码最多发 9 次请求（SDK 默认 2 + 应用层 3） | `openai.OpenAI(...)` 构造器没显式设 `max_retries=0`，SDK 默认 2 次 | 构造器加 `max_retries=0`，仅保留应用层 `max_retries=3` 的重试逻辑 |
+
+**防护**：
+- llm_mutator_base.py 的 OpenAI client 构造处必须 `max_retries=0`
+- grep 验证：`rg 'max_retries=0' src/protocols/llm_mutator_base.py` 必须命中
+- 新协议 llm_mutator 走基类，不需要自己构造 OpenAI client（已统一）
+
+#### 反模式 W：content None 被宽 except 吞 + 未分类异常不上报 on_error
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| LLM 返回 content=None 时 `response.choices[0].message.content.strip()` 抛 AttributeError | 未做 None 防护，直接 `.strip()` | `msg = response.choices[0].message; content = msg.content if msg and msg.content else ""` |
+| AttributeError 被 `except Exception` 吞掉，白耗 3 次重试 | 宽 except 吃掉了空响应错误 | 空内容调 `on_error(fc, "EMPTY_RESP", "模型返回空内容")` 后 continue，不再进重试循环 |
+| 未分类异常（`_parse_error` 返回空 code）只 print 不调 on_error → `with_error` 统计偏低 | 异常分支漏了 on_error 调用 | 未分类异常调 `on_error(fc, "UNKNOWN", err_str[:120])`，保证 LLMStatus 统计准确 |
+
+**防护**：
+- llm_mutator_base.py 取 content 必须做 None 三元防护
+- 所有异常分支（429/401/403/404/5xx/TIMEOUT/CONN/EMPTY/UNKNOWN）都必须调 `on_error(func_code_str, error_code, detail)`
+- 验证：mock content=None 的响应，确认 on_error("EMPTY_RESP") 被调用且不重试
+
+#### 反模式 X：从站 CLI 参数接口不一致 → 部分从站缺 `--host`
+
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| modbus_server 用手工 `sys.argv` while 循环，只支持 `--port`/`--strict`，不支持 `--host`，`__main__` 硬编码 `DEFAULT_HOST` 传入 `run_server` | 首个从站（modbus）早于其余 6 个编写，未跟上后来统一的 argparse 三参数接口 | `_parse_args()` 改用 `argparse`，统一 `--host`/`--port`/`--strict`，返回 `(host, port, strict)`；`__main__` 传入解析后的 host |
+
+**防护**：
+- 所有从站 `server/<name>_server.py` 的 `_parse_args()` 必须使用 argparse，且三参数齐全（`--host` 默认 127.0.0.1、`--port`、`--strict`）
+- 新增从站时复制现有从站模板（如 s7comm_server.py），不要手工重写参数解析
+- 验证：`python server/<name>_server.py --help` 必须同时显示 `--host HOST --port PORT --strict`；`rg 'add_argument' server/<name>_server.py` 应命中 3 个
+
+#### 反模式 Y：抽象基类签名与实现类不对齐 → 调用方传参时基类签名缺失
+
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| `base.py:ProtocolBase.run_fuzz` 签名缺 `llm_status=None, stop_event=None`，但 7 个实现类和 fuzz_loop 调用方都传这两个参数 | 基类抽象方法签名未跟随实现类/调用方的参数演进同步更新 | 基类 `run_fuzz` 签名补齐 `llm_status=None, stop_event=None`，与 7 个实现类完全一致 |
+
+**防护**：
+- 抽象基类（`base.py`）的方法签名必须与所有实现类保持一致；实现类新增参数时，基类必须同步
+- 验证：`rg 'def run_fuzz' src/protocols/` 确认 base.py 与 7 个 client.py 签名完全相同
+
+---
+
+#### 反模式 Z：测试 mock 打错模块层级 → 被测路径绕过 mock（LLM 路径绕过 seed，flaky 复发）
+
+**来源**：第 9-10 轮审计（2026-09-18，verify_fuzz_flow modbus EXCEPTION 断言间歇 FAIL）
+
+| 症状 | 根因 | 修复 |
+|------|------|------|
+| `verify_fuzz_flow` 声称已禁用 LLM（patch 了 `<协议>.llm_mutator._load_model_config`），但在装有 openai 的环境下 LLM 路径仍然连通云端/ollama，seed=42 本地变异被绕过，`EXCEPTION分类出现` 断言间歇 FAIL（结果不可复现） | `generate_mutations()` 内部实际调用的是 `llm_mutator_base.py` 模块级的 `_load_model_config`，patch 协议级薄壳的同名函数不影响基类的真实引用——mock 覆盖的是"名字"而非"被测函数实际解析到的模块" | verify_fuzz_flow.py 补 patch 真实引用点：`importlib.import_module("src.protocols.llm_mutator_base")._load_model_config = lambda *a, **k: {}`，彻底切断 LLM 路径 |
+
+**防护**：
+- mock 前先确认被测函数的真实引用链：`rg "_load_model_config" src/protocols/` 找出**所有定义点与调用点**，patch 实际被调用的那一个（v1.7.0 基类化后为 `llm_mutator_base` 模块级函数，不是协议薄壳）
+- 禁用 LLM 的测试必须在"装有 openai 的环境"（agentscope_env）下跑——未装 openai 时 LLM 路径天然不通，mock 打错也测不出来（假阴性）
+- 确定性验证：seed 固定后连续跑 ≥5 次结果必须完全一致；出现间歇差异即怀疑 mock 未生效（与反模式 P 联合判断）
+
+---
+
+**关于 llm_mutator_base.py 基类（v1.7.0 重构）**：
+7 个协议的 llm_mutator.py 已合并为 `src/protocols/llm_mutator_base.py` 基类 + 7 个薄壳（27-45 行）。薄壳只负责 `_build_prompt()`（协议特异 prompt）和 `LOG_PREFIX`，其他逻辑（模型配置加载、provider 解析、错误分类、重试、长度校验、None 防护）全部在基类。新增协议时：
+- 复制一个现有薄壳（如 s7comm/llm_mutator.py），改 `LOG_PREFIX` 和 `_build_prompt()` 里的协议名
+- 不要在薄壳里写 OpenAI client 构造、重试、错误分类——这些由基类统一处理
+- 基类的 `generate_mutations()` 签名：`(base_payload_hex, count=5, status_collector=None, func_code_str=None, on_error=None)`
+
 十七、多位置功能码一致性清单
 **每次新增协议 / 修改功能码定义时，必须同步检查以下 5 个位置**。漏了任何一个，check_protocol.py 不会全部报警（它只查 JSON 和 report_generator 的条目，不查 client.py / mutator.py / server.py 里的硬编码）。
 
@@ -1372,10 +1634,13 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
   - [ ] `python -c "from src.protocols.<name>.client import <Name>Client, _FUNC_NAME_MAP; print(len(_FUNC_NAME_MAP))"` 不报错
 - [ ] **2.4** 创建 `mutator.py` — `mutate_payload()` 函数，`_FUNC_CODE_POOL` 与 JSON 请求码数量一致
   - [ ] `python -c "from src.protocols.<name>.mutator import _FUNC_CODE_POOL; assert len(_FUNC_CODE_POOL) == M"`
-- [ ] **2.5** 创建 `llm_mutator.py` — `llm_generate_mutations()` 函数，模板从现有协议复制（**必须带 `status_collector=None, func_code_str=None` 参数**，参考反模式 K 的防护）
-  - [ ] OpenAI client 构造处**必须带 `timeout=25`**（参考反模式 M）。多行格式（modbus/s7comm 风格）：timeout=25 独立成一行对齐缩进
+- [ ] **2.5** 创建 `llm_mutator.py` — 薄壳，调用 `llm_mutator_base.py` 基类（参考"关于 llm_mutator_base.py 基类"说明）
+  - [ ] 薄壳只写 `LOG_PREFIX` 和 `_build_prompt()`，不要自己写 OpenAI client 构造/重试/错误分类
+  - [ ] 调用基类 `generate_mutations(base_payload_hex=base_hex, count=5, status_collector=status_collector, func_code_str=func_code_str, on_error=on_error)`
   - [ ] `python -c "import ast; ast.parse(open('.../llm_mutator.py').read())"` → 语法检查通过
-  - [ ] `grep -c 'timeout=25' src/protocols/<name>/llm_mutator.py` → 至少 1 个
+  - [ ] `rg 'max_retries=0' src/protocols/llm_mutator_base.py` → 必须命中（反模式 V）
+  - [ ] `rg 'base_len = len(base_payload_hex)' src/protocols/llm_mutator_base.py` → 必须命中（反模式 U）
+  - [ ] `rg 'msg.content if msg and msg.content' src/protocols/llm_mutator_base.py` → 必须命中（反模式 W）
 - [ ] **2.6** 创建 `__init__.py` — `register_protocol("<name>", <Name>Client)`
   - [ ] `python -c "from src.protocols.registry import auto_load_builtin, list_protocols; auto_load_builtin(); assert '<name>' in list_protocols(); print('注册成功')"`
 
@@ -1391,6 +1656,11 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
   - [ ] func_name_map 数量 = client.py _FUNC_NAME_MAP 数量
   - [ ] write_funcs + critical_funcs ⊂ func_name_map keys
   - [ ] `python -c "from src.core.report_generator import PROTOCOL_CONFIG, _get_func_name; print(len(PROTOCOL_CONFIG)); print(_get_func_name(0x01, '<name>'))"` 不报错且名字正确
+- [ ] **4.2** 报告 XSS 转义检查（反模式 T）
+  - [ ] `rg 'def _esc' src/core/report_generator.py` → 必须存在 `_esc` 辅助函数
+  - [ ] `rg '<script>' src/core/report_generator.py` → 不应出现在 HTML 拼接路径（模板里的字面 <script> 除外）
+  - [ ] 构造含 `<script>alert(1)</script>` 的 target 跑一次单报告生成，`grep -c '<script>' reports/report_<name>_*.html` 必须 = 0
+  - [ ] 构造含 `<img src=x onerror=alert(1)>` 的 build_failures reason 跑一次，确认被转义为 `&lt;img`
 
 ### 阶段 5：验证
 - [ ] **5.1** `python tools/check_protocol.py <name>` — 必须 11/11 [OK]，如有 [FAIL] 或 [WARN] 必须修复或解释
@@ -1411,10 +1681,13 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 - [ ] **6.1** 删除临时断言脚本（不要留在项目里）
 - [ ] **6.2** 更新 PRD 版本规划状态（如果这个协议是规划中的）
 - [ ] **6.3** 如果发现了新反模式，追加到十六章
+- [ ] **6.4** 删除"死代码"前必须全局 grep 引用（含 tests/ 目录）
+  - [ ] 第 5 轮审计 R5-7：`_summarize_suggestions` 和 `generate_error_report` 被误判为死代码，但实际被 `tests/verify_error_report.py`、`verify_combined_report.py`、`verify_fixes.py` 引用
+  - [ ] 规则：删函数前必须 `rg "函数名" --type py` 全项目搜，确认无引用才删；若被 tests/ 引用则保留并加注释说明 `# Used by tests/xxx.py; ...`
 
 ### 阶段 7：全面检查（新增协议后必跑，功能性 + 兼容性）
 > 阶段 5 是"这个协议自己的 check_protocol 11/11"，阶段 7 是"加了这个协议之后，整个项目还能正常跑"。
-> 安全相关的全面审计不在此列——那是独立的"审计 PRD"管的事（见 docs/IndusFuzz 审计PRD.md）。
+> 安全基线回归已纳入 7.9（server 绑 127.0.0.1 / 无硬编码 Key / timeout+max_retries / 无危险调用 / 无 elif 膨胀 / Bandit 零 HIGH）；更全面的安全审计（OWASP Top 10 + LLM Top 10）见 docs/IndusFuzz 审计PRD.md。
 
 - [ ] **7.1** 所有既有协议 check_protocol 仍然全过 — 新增协议不应破坏任何现有协议
   - [ ] `python tools/check_protocol.py modbus` → 11/11
@@ -1434,12 +1707,36 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
   - [ ] `python -c "from src.core.report_generator import PROTOCOL_CONFIG; print(len(PROTOCOL_CONFIG))"` → 8
 - [ ] **7.6** 跑一个既有协议完整 fuzz 流程（比如 modbus），不崩溃，报告正常生成
   - [ ] 至少 3 个功能码测试，能正常发请求、收响应、分类、写报告
-- [ ] **7.7** 各 llm_mutator.py 仍然有 timeout=25 — 加新协议时不会漏
-  - [ ] `rg -c "timeout=25" src/protocols/*/llm_mutator.py` → 8 个都 >= 1
-- [ ] **7.8** 无新引入的反模式（对照十六章 A-N）
+- [ ] **7.7** llm_mutator_base.py 有 timeout=25 — v1.7.1 重构后 timeout 统一在基类函数 generate_mutations，各协议 llm_mutator.py 导入调用
+  - [ ] `rg "timeout=25" src/protocols/llm_mutator_base.py` → 命中（基类统一超时）
+  - [ ] `rg "from src.protocols.llm_mutator_base import" src/protocols/*/llm_mutator.py` → 7 个都命中（确认走基类）
+- [ ] **7.8** 无新引入的反模式（对照十六章 A-Z，共 26 条）
   - [ ] 没改 menu.py / fuzz_loop_llm.py 的 if-elif 分支（反模式 B）
   - [ ] 没硬编码协议名（反模式 C）
   - [ ] 没在 report_generator 出现重复条目（反模式 G）
+  - [ ] report_generator.py 所有外部文本（target/reason/error_msg/gpu_summary）都走 `_esc()`（反模式 T）
+  - [ ] llm_mutator_base.py 有 max_retries=0、base_len 长度校验、content None 防护（反模式 U/V/W）
+  - [ ] run_fuzz 循环变量名统一叫 func_code（反模式 K）
+  - [ ] 修复附实测输出，不靠"语法对=能跑"（反模式 O）
+  - [ ] 随机路径固定 seed，验证连续跑 ≥5 次（反模式 P）
+  - [ ] server 白名单从 JSON 生成，不手抄（反模式 R）
+  - [ ] mutator 功能码池含非法码（反模式 S）
+  - [ ] 所有从站 `_parse_args()` 用 argparse 且 `--host/--port/--strict` 三参数齐全（反模式 X）
+  - [ ] `base.py` 抽象方法签名与所有实现类一致（`rg 'def run_fuzz' src/protocols/` 确认 base.py 与 7 个 client.py 签名相同，反模式 Y）
+- [ ] **7.9 安全基线回归**（对应审计 PRD 5.12，新增协议后必做，不通过不能进主分支）
+  - [ ] 新 server.py 默认监听 127.0.0.1（`rg "0.0.0.0" server/<new>_server.py` 不应命中）
+  - [ ] client.py / llm_mutator.py 无硬编码 Key（`rg -i "sk-[a-z0-9]{10}" src/protocols/<new>/` 零命中）
+  - [ ] llm_mutator 走基类，基类有 timeout=25 + max_retries=0（反模式 M + V）
+  - [ ] 无 eval/exec/pickle.loads/os.system（`rg "\beval\(|\bexec\(|pickle\.loads|os\.system" src/protocols/<new>/` 零命中）
+  - [ ] 新协议不出现在 menu/fuzz_loop 的 if-elif（`rg "elif.*<new>" src/core/` 不应命中，反模式 B）
+  - [ ] Bandit 零 HIGH：`bandit -r src/protocols/<new>/ server/<new>_server.py -lll`
+- [ ] **7.10 真实设备支持检查**（v2.0 新增，新增协议后必做）
+  - [ ] client.py 实现 9 个方法（`rg "def (build_request|send_payload|parse_response|get_default_port|get_func_codes|run_fuzz|connect|disconnect|is_connected)" src/protocols/<new>/client.py` → 9 命中）
+  - [ ] connect 实现协议握手（参照九章握手表）
+  - [ ] send_payload 双模式（persistent + 无状态回退 + 失败熔断 >3 次放弃）
+  - [ ] _recv_frame 按协议帧长循环接收（不一次性 recv(4096)）
+  - [ ] menu.py PROTOCOL_CONNECT_PARAMS 含新协议（`rg '"<new>":' src/core/menu.py` 命中）
+  - [ ] README.md + README.zh.md 的"真实设备测试指南"含新协议章节
 
 **DNP3 接入 Checklist 完成情况**：
 ```

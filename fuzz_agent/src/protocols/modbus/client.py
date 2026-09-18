@@ -1,4 +1,5 @@
 import sys
+import socket
 from src.protocols.base import ProtocolBase
 from src.protocols.modbus.modbus_tools import build_modbus_request, send_modbus_payload
 from src.protocols.modbus.mutator import mutate_payload as local_mutate
@@ -28,6 +29,10 @@ _FUNC_NAME_MAP = {
 }
 
 
+# 非法功能码集合（Modbus 标准未定义，设备必回异常响应）
+_ILLEGAL_FC_BYTES = {"5a", "a5", "ff"}
+
+
 def _generate_local_fallback(base_payload, base_hex, mutate_fn, count=5, max_attempts=30):
     seen = set()
     mutations = []
@@ -42,12 +47,34 @@ def _generate_local_fallback(base_payload, base_hex, mutate_fn, count=5, max_att
             continue
         seen.add(hex_m)
         mutations.append(hex_m)
+
+    # 保证至少有一条变异使用非法功能码（5A/A5/FF），确保能触发 EXCEPTION 分类
+    has_illegal = any(len(h) >= 16 and h[14:16] in _ILLEGAL_FC_BYTES for h in mutations)
+    if not has_illegal and len(base_payload) >= 8:
+        forced = bytearray(base_payload)
+        forced[7] = 0xFF  # 强制写入非法功能码
+        forced_hex = forced.hex()
+        if forced_hex not in seen:
+            if mutations:
+                mutations[-1] = forced_hex
+            else:
+                mutations.append(forced_hex)
     return mutations
 
 
 class ModbusClient(ProtocolBase):
     name = "modbus"
     default_port = 5020
+
+    def __init__(self):
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+        self._unit_id = 1
+        self._timeout = 5
+        self._conn_failures = 0
 
     def get_default_port(self) -> int:
         return self.default_port
@@ -56,9 +83,110 @@ class ModbusClient(ProtocolBase):
         return list(_FUNC_NAME_MAP.keys())
 
     def build_request(self, **kwargs):
+        kwargs.setdefault("unit_id", self._unit_id)
         return build_modbus_request(**kwargs)
 
+    def connect(self, host, port, **kwargs) -> bool:
+        self._unit_id = kwargs.get("unit_id", 1)
+        self._timeout = kwargs.get("timeout", 5)
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(self._timeout)
+            s.connect((host, port))
+            self._sock = s
+            self._connected = True
+            self._persistent = True
+            self._real_host = host
+            self._real_port = port
+            self._conn_failures = 0
+            print(f"[Modbus] 已连接真实设备 {host}:{port} (unit_id={self._unit_id})")
+            return True
+        except Exception as e:
+            print(f"[Modbus] 连接失败: {type(e).__name__}: {e}")
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+            self._connected = False
+            self._sock = None
+            return False
+
+    def disconnect(self) -> None:
+        if self._sock:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+
+    def is_connected(self) -> bool:
+        return self._connected
+
+    def _reconnect(self) -> bool:
+        self.disconnect()
+        if self._real_host and self._real_port:
+            return self.connect(self._real_host, self._real_port, unit_id=self._unit_id, timeout=self._timeout)
+        return False
+
+    def _recv_frame(self, sock):
+        try:
+            header = sock.recv(6)
+            if not header:
+                return b""
+            if len(header) < 6:
+                return header
+            length = (header[4] << 8) | header[5]
+            remaining = length
+            data = bytearray()
+            while remaining > 0:
+                chunk = sock.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                remaining -= len(chunk)
+            return bytes(header) + bytes(data)
+        except Exception:
+            return None
+
     def send_payload(self, payload, host="127.0.0.1", port=5020, timeout=3):
+        if self._persistent:
+            if not self._connected:
+                if self._conn_failures > 3:
+                    return None
+                if not self._reconnect():
+                    self._conn_failures += 1
+                    return None
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(payload)
+                resp = self._recv_frame(self._sock)
+                if resp is None:
+                    self._connected = False
+                    self._conn_failures += 1
+                    try:
+                        self._sock.close()
+                    except Exception:
+                        pass
+                    self._sock = None
+                    return None
+                if resp == b"":
+                    self._connected = False
+                return resp if resp else None
+            except Exception:
+                self._connected = False
+                self._conn_failures += 1
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+                return None
         return send_modbus_payload(payload, host=host, port=port, timeout=timeout)
 
     def parse_response(self, raw) -> dict:
@@ -91,7 +219,7 @@ class ModbusClient(ProtocolBase):
                 skipped.append({"round": idx, "func_code": fc_str, "reason": reason})
                 continue
 
-            base_payload = build_modbus_request(func_code=func_code)
+            base_payload = build_modbus_request(func_code=func_code, unit_id=self._unit_id)
             if base_payload is None:
                 reason = f"功能码 0x{func_code:02X} 基准报文构造失败"
                 print(f"警告：{reason}，跳过")
@@ -147,7 +275,11 @@ class ModbusClient(ProtocolBase):
                     build_failures.append({"func_code": func_code, "stage": "变异报文解析", "reason": reason})
                     continue
 
-                response = send_modbus_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                response = self.send_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                if self._conn_failures > 3:
+                    if stop_event:
+                        stop_event.set()
+                    break
                 response_hex = response.hex() if response else ""
                 classification = self._classify(mutation_bytes, response)
 

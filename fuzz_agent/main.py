@@ -1,9 +1,49 @@
 import sys
 import os
 
+# 修复 Windows 控制台 GBK 编码无法输出 Unicode 字符（✓ 等）的问题
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+_SLAVE_MODULES = {
+    "modbus": "server.modbus_server",
+    "s7comm": "server.s7comm_server",
+    "dnp3": "server.dnp3_server",
+    "iec104": "server.iec104_server",
+    "iec61850": "server.iec61850_server",
+    "enip": "server.enip_server",
+    "opcua": "server.opcua_server",
+}
+
+
+def _run_slave_from_argv(argv):
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--protocol", required=True)
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--strict", action="store_true")
+    args = parser.parse_args(argv)
+    mod_name = _SLAVE_MODULES.get(args.protocol)
+    if not mod_name:
+        print(f"[slave] 未知协议: {args.protocol}")
+        sys.exit(1)
+    import importlib
+    mod = importlib.import_module(mod_name)
+    mod.run_server(host=args.host, port=args.port, strict=args.strict)
+
+
+if len(sys.argv) > 1 and sys.argv[1] == "--run-slave":
+    _run_slave_from_argv(sys.argv[2:])
+    sys.exit(0)
 
 from src.protocols.registry import auto_load_builtin, auto_load_plugins
 from src.core.version import __version__
@@ -154,7 +194,8 @@ if __name__ == "__main__":
         import traceback, os, datetime
         try:
             from src.core.fuzz_loop_llm import _error_log_lock
-            reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
+            from src.core._resource import app_dir
+            reports_dir = os.path.join(app_dir(), "reports")
             os.makedirs(reports_dir, exist_ok=True)
             with _error_log_lock:
                 with open(os.path.join(reports_dir, "error.log"), "a", encoding="utf-8") as f:

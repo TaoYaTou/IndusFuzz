@@ -16,5 +16,15 @@ class ProtocolBase:
     def get_func_codes(self) -> list:
         raise NotImplementedError
 
-    def run_fuzz(self, func_codes, host, port, timeout, results, skipped, build_failures):
+    def connect(self, host, port, **kwargs) -> bool:
+        raise NotImplementedError
+
+    def disconnect(self) -> None:
+        pass
+
+    def is_connected(self) -> bool:
+        return False
+
+    def run_fuzz(self, func_codes, host, port, timeout, results, skipped, build_failures,
+                 llm_status=None, stop_event=None):
         raise NotImplementedError

@@ -71,6 +71,14 @@ def run_one(protocol):
             _llm_mod._load_model_config = lambda: None
         except Exception:
             pass
+        # generate_mutations 内部调用的是 llm_mutator_base 模块级 _load_model_config，
+        # 必须同步打补丁才能真正禁用 LLM 路径
+        try:
+            import importlib
+            _base_mod = importlib.import_module("src.protocols.llm_mutator_base")
+            _base_mod._load_model_config = lambda *a, **k: {}
+        except Exception:
+            pass
 
         # 固定 mutator seed 消除变异随机性，确保验证可复现
         try:

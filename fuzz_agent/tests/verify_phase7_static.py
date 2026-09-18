@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import importlib
 import inspect
 
@@ -48,14 +49,13 @@ cfg_keys = sorted(report_generator.PROTOCOL_CONFIG.keys())
 check("7.5 PROTOCOL_CONFIG 条目数", "7", str(len(cfg_keys)))
 check("7.5 PROTOCOL_CONFIG 覆盖", "dnp3,enip,iec104,iec61850,modbus,opcua,s7comm", ",".join(cfg_keys))
 
-import glob
-timeout_files = []
-for f in glob.glob(os.path.join(FUZZ_AGENT, "src", "protocols", "*", "llm_mutator.py")):
-    with open(f, "r", encoding="utf-8") as fh:
-        content = fh.read()
-    if "timeout=25" in content:
-        timeout_files.append(os.path.basename(os.path.dirname(f)))
-check("7.7 llm_mutator timeout=25 (7个)", "7", str(len(timeout_files)))
+# v1.7.1 重构后 timeout=25 收敛至 llm_mutator_base.py，7 个协议 llm_mutator.py 为薄壳继承基类
+base_path = os.path.join(FUZZ_AGENT, "src", "protocols", "llm_mutator_base.py")
+base_ok = False
+if os.path.exists(base_path):
+    with open(base_path, "r", encoding="utf-8") as fh:
+        base_ok = "timeout=25" in fh.read()
+check("7.7 llm_mutator_base timeout=25", "True", str(base_ok))
 
 core_menu = open(os.path.join(FUZZ_AGENT, "src", "core", "menu.py"), encoding="utf-8").read()
 core_fll = open(os.path.join(FUZZ_AGENT, "src", "core", "fuzz_loop_llm.py"), encoding="utf-8").read()
@@ -108,8 +108,6 @@ for f in glob.glob(os.path.join(FUZZ_AGENT, "server", "*_server.py")):
     with open(f, "r", encoding="utf-8") as fh:
         content = fh.read()
     name = os.path.basename(f)
-    if "modbus" in name:
-        continue
     if "--strict" not in content or "--port" not in content or "--host" not in content:
         strict_hits.append(name)
 check("5.12.5+ 全从站支持 --host/--port/--strict", "全部合规", "缺失: " + ",".join(strict_hits) if strict_hits else "全部合规")

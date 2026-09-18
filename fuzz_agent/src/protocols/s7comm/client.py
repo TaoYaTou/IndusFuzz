@@ -3,12 +3,10 @@ import os
 import json
 import socket
 from src.protocols.base import ProtocolBase
+from src.core._resource import resource_path
 
-_CLIENT_DIR = os.path.dirname(os.path.abspath(__file__))
-_FUNC_CODES_PATH = os.path.join(
-    os.path.dirname(_CLIENT_DIR),
-    "func_codes",
-    "s7comm_func_codes.json"
+_FUNC_CODES_PATH = resource_path(
+    os.path.join("src", "protocols", "func_codes", "s7comm_func_codes.json")
 )
 
 
@@ -33,6 +31,17 @@ _PROTO_NAME = "S7comm"
 class S7CommClient(ProtocolBase):
     name = "s7comm"
     default_port = 10102
+
+    def __init__(self):
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+        self._rack = 0
+        self._slot = 2
+        self._timeout = 5
+        self._conn_failures = 0
 
     def get_default_port(self) -> int:
         return self.default_port
@@ -81,9 +90,139 @@ class S7CommClient(ProtocolBase):
             print(f"[S7comm] 构造请求失败: {type(e).__name__}: {e}")
             return None
 
+    def connect(self, host, port, **kwargs) -> bool:
+        self._rack = kwargs.get("rack", 0)
+        self._slot = kwargs.get("slot", 2)
+        self._timeout = kwargs.get("timeout", 5)
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(self._timeout)
+            s.connect((host, port))
+            dst_tsap = (1 << 8) | (self._rack << 4) | self._slot
+            cotp_cr = bytes([
+                0x03, 0x00, 0x00, 0x16,
+                0x11, 0xE0, 0x00, 0x00, 0x00, 0x01, 0x00,
+                0xC0, 0x01, 0x0A,
+                0xC1, 0x02, 0x01, 0x00,
+                0xC2, 0x02, (dst_tsap >> 8) & 0xFF, dst_tsap & 0xFF,
+            ])
+            s.sendall(cotp_cr)
+            try:
+                cc = s.recv(1024)
+            except Exception:
+                cc = b""
+            if not cc or len(cc) < 8:
+                s.close()
+                print("[S7comm] COTP 连接确认失败")
+                return False
+            s7_setup = bytes([
+                0x03, 0x00, 0x00, 0x19,
+                0x02, 0xF0, 0x80,
+                0x32, 0x01, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x08, 0x00, 0x00,
+                0xF0, 0x00, 0x00, 0x01, 0x00, 0x01, 0x03, 0xC0,
+            ])
+            s.sendall(s7_setup)
+            try:
+                s.recv(1024)
+            except Exception:
+                pass
+            self._sock = s
+            self._connected = True
+            self._persistent = True
+            self._real_host = host
+            self._real_port = port
+            self._conn_failures = 0
+            print(f"[S7comm] 已连接真实设备 {host}:{port} (rack={self._rack}, slot={self._slot})")
+            return True
+        except Exception as e:
+            print(f"[S7comm] 连接失败: {type(e).__name__}: {e}")
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+            self._connected = False
+            self._sock = None
+            return False
+
+    def disconnect(self) -> None:
+        if self._sock:
+            try:
+                self._sock.close()
+            except Exception:
+                pass
+        self._sock = None
+        self._connected = False
+        self._persistent = False
+        self._real_host = None
+        self._real_port = None
+
+    def is_connected(self) -> bool:
+        return self._connected
+
+    def _reconnect(self) -> bool:
+        self.disconnect()
+        if self._real_host and self._real_port:
+            return self.connect(self._real_host, self._real_port, rack=self._rack, slot=self._slot, timeout=self._timeout)
+        return False
+
+    def _recv_frame(self, sock):
+        try:
+            header = sock.recv(4)
+            if not header:
+                return b""
+            if len(header) < 4 or header[0] != 0x03:
+                return header
+            length = (header[2] << 8) | header[3]
+            remaining = length - 4
+            data = bytearray()
+            while remaining > 0:
+                chunk = sock.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                remaining -= len(chunk)
+            return bytes(header) + bytes(data)
+        except Exception:
+            return None
+
     def send_payload(self, payload, host="127.0.0.1", port=10102, timeout=3) -> bytes:
         if payload is None:
             return None
+        if self._persistent:
+            if not self._connected:
+                if self._conn_failures > 3:
+                    return None
+                if not self._reconnect():
+                    self._conn_failures += 1
+                    return None
+            try:
+                self._sock.settimeout(timeout)
+                self._sock.sendall(payload)
+                resp = self._recv_frame(self._sock)
+                if resp is None:
+                    self._connected = False
+                    self._conn_failures += 1
+                    try:
+                        self._sock.close()
+                    except Exception:
+                        pass
+                    self._sock = None
+                    return None
+                if resp == b"":
+                    self._connected = False
+                return resp if resp else None
+            except Exception:
+                self._connected = False
+                self._conn_failures += 1
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+                return None
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(timeout)
@@ -206,6 +345,10 @@ class S7CommClient(ProtocolBase):
                     continue
 
                 response = self.send_payload(mutation_bytes, host=host, port=port, timeout=timeout)
+                if self._conn_failures > 3:
+                    if stop_event:
+                        stop_event.set()
+                    break
                 response_hex = response.hex() if response else ""
                 classification = self._classify(mutation_bytes, response)
 

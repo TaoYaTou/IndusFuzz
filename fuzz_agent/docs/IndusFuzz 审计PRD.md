@@ -2,7 +2,7 @@ Fuzz Agent for Industrial Protocols · 审计 PRD v2.5
 一、文档信息
 项目	内容
 产品名称	Fuzz Agent for Industrial Protocols（工业协议模糊测试智能体）
-当前版本	v1.0（架构已重构至 v1.6.x，五协议接入完毕）
+当前版本	v1.8.x（架构已重构至「LLM 驱动变异 + 本地确定性回退」，七协议接入完毕）
 目标版本	v1.5（EXE + 真实 PLC + 全面审计 + MCP 工具链）→ v2.0（开源）
 文档状态	整合稿，漏洞矩阵已完整覆盖，上线门禁已整合
 更新日期	2026-09-16（v2.5 整合上线 8 大门禁 + 最终检查流程 + 不通过处理）
@@ -48,32 +48,50 @@ Fuzz Agent for Industrial Protocols · 审计 PRD v2.5
 
 解决方案：通过 MCP 协议集成 VulnClaw、CodeGuard、CodeInspectus，形成“编码 → 审计 → 渗透 → 报告”闭环。
 
-三、目录结构（v1.6.x 架构重构后）
+三、目录结构（v1.7.x 架构重构后）
 ```
 fuzz_agent/
 ├── src/
 │   ├── protocols/
 │   │   ├── base.py                          # ProtocolBase 抽象基类
-│   │   ├── registry.py                     # register_protocol() + auto_load_builtin()
-│   │   ├── modbus/{client, mutator, llm_mutator, __init__}.py
+│   │   ├── registry.py                      # register_protocol() + auto_load_builtin()
+│   │   ├── llm_mutator_base.py              # LLM 变异基类（timeout/retry/错误分类/长度校验/None 防护）
+│   │   ├── func_codes/                      # *_func_codes.json（自动扫描，7 个协议）
+│   │   ├── modbus/{client, modbus_tools, mutator, llm_mutator, __init__}.py
 │   │   ├── s7comm/{client, mutator, llm_mutator, __init__}.py
 │   │   ├── dnp3/{client, mutator, llm_mutator, __init__}.py
 │   │   ├── iec104/{client, mutator, llm_mutator, __init__}.py
 │   │   ├── iec61850/{client, mutator, llm_mutator, __init__}.py
-│   │   └── func_codes/                      # *_func_codes.json（自动扫描）
+│   │   ├── enip/{client, mutator, llm_mutator, __init__}.py
+│   │   └── opcua/{client, mutator, llm_mutator, __init__}.py
 │   ├── core/
-│   │   ├── fuzz_loop_llm.py                 # run() 调度器（if-elif 已删除，用 get_protocol().run_fuzz()）
-│   │   ├── report_generator.py              # PROTOCOL_CONFIG 集中配置
+│   │   ├── fuzz_loop_llm.py                 # run() 调度器（if-elif 已删除，超时熔断）
+│   │   ├── report_generator.py              # PROTOCOL_CONFIG 集中配置，HTML/PDF/LOG 报告
 │   │   ├── menu.py                          # 自动扫描 func_codes/*.json
-│   │   └── slave_launcher.py                # 按 server/<name>_server.py 约定路径自动查找
-│   └── integrations/                        # MCP 工具链（待集成）
-├── server/                                  # *_server.py 支持 --port --strict
+│   │   ├── slave_launcher.py                # 按 server/<name>_server.py 约定路径自动查找
+│   │   ├── security.py                      # DPAPI 加密 API Key + HTTPS 强制 + 打码
+│   │   ├── llm_precheck.py                  # LLM 连通性预检 + 端口连通性检查
+│   │   ├── llm_status.py                    # 每协议 LLM 调用状态收集
+│   │   ├── result_analyzer.py               # 结果统计分析
+│   │   ├── diagnose.py                      # 连通性诊断
+│   │   ├── runtime_config.py                # 全局运行时开关（如 GPU）
+│   │   ├── gpu_detector.py                  # GPU 检测
+│   │   ├── color_output.py                  # ANSI 彩色输出（Windows VT 降级）
+│   │   └── version.py                       # 版本号唯一来源
+│   └── integrations/                        # MCP 工具链（桩文件：vulnclaw/codeguard/codeinspectus）
+├── server/                                  # 7 个 *_server.py，支持 --port --strict
 ├── tools/
-│   └── check_protocol.py                    # 协议自检工具（11 项检查）
-├── reports/
-├── config/
-├── docs/
+│   ├── check_protocol.py                    # 协议自检工具（11 项检查）
+│   └── clean_before_release.py              # 发布前清理
+├── tests/                                   # verify_*.py 验证脚本 + legacy/
+├── reports/                                 # 生成的报告
+├── config/                                  # config 包（运行配置在 core/runtime_config.py）
+├── assets/
+│   ├── fonts/simhei.ttf                    # PDF 中文字体
+│   └── concept_a_hex/                      # 应用 Logo 图标
+├── docs/                                    # PRD 文档（3 份）
 ├── main.py
+├── start_fuzz.bat
 └── requirements.txt
 ```
 四、功能需求

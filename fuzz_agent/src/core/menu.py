@@ -5,10 +5,9 @@ import socket
 from src.core.color_output import print_ok, print_warn, print_error, print_info
 
 from src.core import security
+from src.core._resource import resource_path
 
-MENU_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(MENU_DIR))
-FUNC_CODES_DIR = os.path.join(PROJECT_ROOT, "src", "protocols", "func_codes")
+FUNC_CODES_DIR = resource_path(os.path.join("src", "protocols", "func_codes"))
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".indusfuzz")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
@@ -176,9 +175,11 @@ def _load_registry():
 
 def check_environment():
     result = {"python": True, "ollama": False, "ollama_models": []}
+    no_proxy = urllib.request.ProxyHandler({})
+    opener = urllib.request.build_opener(no_proxy)
     try:
-        req = urllib.request.Request("http://localhost:11434/api/tags", method="GET")
-        with urllib.request.urlopen(req, timeout=3) as resp:
+        req = urllib.request.Request("http://127.0.0.1:11434/api/tags", method="GET")
+        with opener.open(req, timeout=3) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             result["ollama"] = True
             result["ollama_models"] = [m.get("name", "") for m in data.get("models", [])]
@@ -189,13 +190,19 @@ def check_environment():
 def _test_llm_connection(base_url, api_key, model_name, timeout=15):
     try:
         import openai
+        import httpx
     except ImportError:
         return False, "openai 库未安装，无法测试连通性", 0.0
 
     import time
     start = time.time()
+    is_local = "localhost" in base_url or "127.0.0.1" in base_url
     try:
-        client = openai.OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+        if is_local:
+            http_client = httpx.Client(trust_env=False, timeout=timeout)
+            client = openai.OpenAI(base_url=base_url, api_key=api_key, timeout=timeout, http_client=http_client)
+        else:
+            client = openai.OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
         response = client.chat.completions.create(
             model=model_name,
             messages=[{"role": "user", "content": "ping"}],
@@ -943,6 +950,199 @@ def _select_production_target():
             return target
 
 
+PROTOCOL_CONNECT_PARAMS = {
+    "modbus": {
+        "default_port": 502,
+        "extra": [
+            {"key": "unit_id", "label": "Unit ID", "default": 1, "type": "int", "min": 1, "max": 255, "hint": "1-255，部分设备用 255"},
+        ],
+    },
+    "s7comm": {
+        "default_port": 102,
+        "extra": [
+            {"key": "rack", "label": "Rack", "default": 0, "type": "int", "min": 0, "max": 7, "hint": "通常为 0"},
+            {"key": "slot", "label": "Slot", "default": 1, "type": "int", "min": 1, "max": 31, "hint": "S7-300/400 常用 2 或 3，S7-1200/1500 用 1"},
+        ],
+    },
+    "dnp3": {
+        "default_port": 20000,
+        "extra": [
+            {"key": "master_addr", "label": "Master Address", "default": 1, "type": "int", "min": 0, "max": 65519, "hint": "主站地址"},
+            {"key": "outstation_addr", "label": "Outstation Address", "default": 10, "type": "int", "min": 0, "max": 65519, "hint": "从站地址"},
+        ],
+    },
+    "iec104": {
+        "default_port": 2404,
+        "extra": [
+            {"key": "common_addr", "label": "Common Address", "default": 1, "type": "int", "min": 0, "max": 65535, "hint": "公共地址，需与设备一致"},
+        ],
+    },
+    "iec61850": {
+        "default_port": 102,
+        "extra": [
+            {"key": "ied_ref", "label": "IED 引用", "default": "", "type": "str", "hint": "可选，留空自动发现"},
+        ],
+    },
+    "enip": {
+        "default_port": 44818,
+        "extra": [
+            {"key": "slot", "label": "CPU 槽号", "default": 0, "type": "int", "min": 0, "max": 255, "hint": "默认 0"},
+        ],
+    },
+    "opcua": {
+        "default_port": 4840,
+        "extra": [
+            {"key": "security_policy", "label": "安全策略", "default": "None", "type": "str", "hint": "None / Basic128Rsa15 / Basic256"},
+        ],
+        "use_endpoint": True,
+    },
+}
+
+
+def _is_valid_ip(host):
+    try:
+        socket.inet_aton(host)
+        return True
+    except Exception:
+        return False
+
+
+def _parse_endpoint_url(url):
+    url = url.strip()
+    if not url.startswith("opc.tcp://"):
+        return None, None, "Endpoint URL 必须以 opc.tcp:// 开头"
+    rest = url[len("opc.tcp://"):]
+    if ":" not in rest:
+        return None, None, "Endpoint URL 必须包含端口，格式 opc.tcp://IP:端口"
+    host, port_str = rest.rsplit(":", 1)
+    if not host:
+        return None, None, "主机地址不能为空"
+    try:
+        port = int(port_str)
+    except ValueError:
+        return None, None, "端口格式错误"
+    if port < 1 or port > 65535:
+        return None, None, "端口范围 1-65535"
+    return host, port, None
+
+
+def _prompt_int(prompt, default, min_val=None, max_val=None):
+    while True:
+        raw = _safe_input(prompt)
+        if not raw:
+            return default
+        try:
+            val = int(raw)
+        except ValueError:
+            print_warn("请输入整数")
+            continue
+        if min_val is not None and val < min_val:
+            print_warn(f"取值不能小于 {min_val}")
+            continue
+        if max_val is not None and val > max_val:
+            print_warn(f"取值不能大于 {max_val}")
+            continue
+        return val
+
+
+def _select_connect_params(protocols, scenario):
+    print()
+    print(f"--- {SCENARIO_NAME.get(scenario, scenario)} 连接参数配置 ---")
+    if scenario == "production":
+        print_warn("⚠️  生产环境：请确认参数与设备实际配置完全一致")
+    print()
+
+    connect_params = {}
+    targets = {}
+
+    for p in protocols:
+        schema = PROTOCOL_CONNECT_PARAMS.get(p)
+        if not schema:
+            print_warn(f"⚠️  协议 {p} 未定义连接参数模板，使用默认值")
+            schema = {"default_port": 502, "extra": []}
+
+        print(f"======== {_display_name(p)} ========")
+
+        use_endpoint = schema.get("use_endpoint", False)
+        if use_endpoint:
+            default_port = schema["default_port"]
+            while True:
+                default_url = f"opc.tcp://192.168.1.100:{default_port}"
+                raw = _safe_input(f"Endpoint URL [默认 {default_url}]: ")
+                url = raw or default_url
+                host, port, err = _parse_endpoint_url(url)
+                if err:
+                    print_warn(f"{err}，请重新输入")
+                    continue
+                break
+            endpoint = url
+        else:
+            while True:
+                host = _safe_input("设备 IP（必填，q=返回上一步）: ")
+                if not host:
+                    print("IP 不能为空，请重新输入")
+                    continue
+                if not _is_valid_ip(host):
+                    print_warn(f"IP 格式无效：{host}，请重新输入")
+                    continue
+                break
+            default_port = schema["default_port"]
+            while True:
+                raw = _safe_input(f"端口 [默认 {default_port}]: ")
+                if not raw:
+                    port = default_port
+                    break
+                try:
+                    port = int(raw)
+                except ValueError:
+                    print_warn("端口格式错误，请输入整数")
+                    continue
+                if port < 1 or port > 65535:
+                    print("端口范围 1-65535")
+                    continue
+                break
+
+        extra = {}
+        for field in schema.get("extra", []):
+            key = field["key"]
+            label = field["label"]
+            default = field["default"]
+            ftype = field["type"]
+            hint = field.get("hint", "")
+            prompt = f"{label}"
+            if hint:
+                prompt += f"（{hint}）"
+            prompt += f" [默认 {default if default != '' else '空'}]: "
+            if ftype == "int":
+                val = _prompt_int(prompt, default, min_val=field.get("min"), max_val=field.get("max"))
+            else:
+                val = _safe_input(prompt)
+                if val == "":
+                    val = default
+            extra[key] = val
+
+        if use_endpoint:
+            extra["endpoint"] = endpoint
+
+        connect_params[p] = {"host": host, "port": port, "extra": extra}
+        targets[p] = f"{host}:{port}"
+        print(f"  → {host}:{port}")
+        if extra:
+            parts = [f"{k}={v}" for k, v in extra.items() if k != "endpoint"]
+            if use_endpoint:
+                parts.insert(0, f"endpoint={endpoint}")
+            print(f"  → 参数: {', '.join(parts)}")
+        print()
+
+    print("--- 连接参数汇总 ---")
+    for p, cp in connect_params.items():
+        print(f"  {_display_name(p)}: {cp['host']}:{cp['port']}")
+    print()
+    if _confirm("确认连接参数？(y=确认 / n=重输 / q=返回): "):
+        return connect_params, targets
+    return None, None
+
+
 def _select_scenario():
     print()
     print("======== 选择目标场景 ========")
@@ -974,7 +1174,7 @@ def select_target(protocols):
     print()
     print("  不同场景使用不同地址和超时策略")
     print("  本机自测：每个协议自动使用默认端口")
-    print("  局域网/真实设备：所有协议共用同一个自定义 IP:端口")
+    print("  局域网/真实设备：逐个协议配置 IP、端口及协议参数")
 
     scenario = _select_scenario()
 
@@ -982,13 +1182,12 @@ def select_target(protocols):
         targets = _select_local_targets(protocols)
         if targets is None:
             raise GoBack()
-        return targets, scenario
-    elif scenario == "lan":
-        target = _select_lan_target()
-        return {p: target for p in protocols}, scenario
-    else:
-        target = _select_production_target()
-        return {p: target for p in protocols}, scenario
+        return targets, scenario, None
+
+    connect_params, targets = _select_connect_params(protocols, scenario)
+    if connect_params is None:
+        raise GoBack()
+    return targets, scenario, connect_params
 
 
 def check_target_reachable(target, timeout=6):
@@ -1098,6 +1297,13 @@ def confirm_and_start(config):
     if config.get("scenario") == "local":
         mode_name = "严格" if config["slave_mode"] == "strict" else "宽松"
         print(f"  [高级] 从站模式: [{mode_name}]（输入 L 切换）")
+    elif config.get("connect_params"):
+        print("  连接参数:")
+        for p, cp in config["connect_params"].items():
+            extra = cp.get("extra", {})
+            parts = [f"{k}={v}" for k, v in extra.items()]
+            extra_str = f"（{', '.join(parts)}）" if parts else ""
+            print(f"    {_display_name(p)}: {cp['host']}:{cp['port']} {extra_str}")
     print()
 
     while True:
@@ -1164,9 +1370,10 @@ def interactive_flow():
                 idx += 1
 
             elif step == "target":
-                targets, scenario = select_target(state["protocols"])
+                targets, scenario, connect_params = select_target(state["protocols"])
                 state["targets"] = targets
                 state["scenario"] = scenario
+                state["connect_params"] = connect_params
                 state["timeout"] = SCENARIO_TIMEOUT.get(scenario, 6)
                 idx += 1
 

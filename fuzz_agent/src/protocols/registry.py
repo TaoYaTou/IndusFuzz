@@ -1,4 +1,5 @@
 import os
+import sys
 import importlib
 
 _PROTOCOLS = {}
@@ -9,6 +10,10 @@ _PLUGINS_DIR = os.path.join(
 )
 
 _PROTOCOLS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+_BUILTIN_PROTOCOLS = [
+    "modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua",
+]
 
 
 def register_protocol(name, protocol_class):
@@ -30,21 +35,30 @@ def list_protocols():
 
 
 def auto_load_builtin():
-    if not os.path.isdir(_PROTOCOLS_DIR):
-        return
-    for entry in os.listdir(_PROTOCOLS_DIR):
-        entry_path = os.path.join(_PROTOCOLS_DIR, entry)
-        if not os.path.isdir(entry_path):
-            continue
-        init_file = os.path.join(entry_path, "__init__.py")
-        if not os.path.isfile(init_file):
-            continue
-        if entry.startswith("_") or entry == "base" or entry == "func_codes":
+    loaded = set()
+    if os.path.isdir(_PROTOCOLS_DIR):
+        for entry in os.listdir(_PROTOCOLS_DIR):
+            entry_path = os.path.join(_PROTOCOLS_DIR, entry)
+            if not os.path.isdir(entry_path):
+                continue
+            init_file = os.path.join(entry_path, "__init__.py")
+            if not os.path.isfile(init_file):
+                continue
+            if entry.startswith("_") or entry == "base" or entry == "func_codes":
+                continue
+            try:
+                importlib.import_module(f"src.protocols.{entry}")
+                loaded.add(entry)
+            except Exception as e:
+                print(f"[注册表] 警告：加载内置协议 {entry} 失败: {type(e).__name__}: {e}")
+
+    for name in _BUILTIN_PROTOCOLS:
+        if name in loaded:
             continue
         try:
-            importlib.import_module(f"src.protocols.{entry}")
+            importlib.import_module(f"src.protocols.{name}")
         except Exception as e:
-            print(f"[注册表] 警告：加载内置协议 {entry} 失败: {type(e).__name__}: {e}")
+            print(f"[注册表] 警告：加载内置协议 {name} 失败: {type(e).__name__}: {e}")
 
 
 def auto_load_plugins():
