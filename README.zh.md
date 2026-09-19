@@ -191,8 +191,8 @@ Ollama 默认在 CPU 上运行；使用本地 Ollama 时向导会询问是否启
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/IndusFuzz/indusfuzz.git
-cd indusfuzz/fuzz_agent
+git clone https://github.com/TaoYaTou/IndusFuzz.git
+cd IndusFuzz/fuzz_agent
 
 # 2. 创建并激活虚拟环境
 python -m venv agentscope_env
@@ -469,6 +469,95 @@ python main.py
 | `run.log`           | 原始运行日志 |
 
 报告包含：统计摘要、风险分级、异常分布、功能码统计。当某协议的模糊测试因整体超时被强制终止时，报告顶部会显示相应的提示横幅。
+
+***
+
+## 测试
+
+本项目使用 pytest 作为测试框架，覆盖协议注册、变异逻辑、报告生成、安全模块四大核心部分。
+
+### 环境准备
+
+安装测试依赖：
+
+```bash
+pip install pytest pytest-cov bandit flake8
+```
+
+> 测试依赖仅在开发时需要，运行 IndusFuzz 本身不需要安装这些（运行依赖见「依赖清单」）。
+
+### 运行测试
+
+运行全部测试：
+
+```bash
+cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
+pytest tests/ -v
+```
+
+运行单个测试文件：
+
+```bash
+pytest tests/test_registry.py -v
+pytest tests/test_mutator.py -v
+pytest tests/test_reporter.py -v
+pytest tests/test_security.py -v
+```
+
+运行单个测试函数：
+
+```bash
+pytest tests/test_security.py -k "test_encrypt" -v
+```
+
+查看详细输出（含每个用例的耗时与临时目录）：
+
+```bash
+pytest tests/ -v --tb=short
+```
+
+### 测试覆盖率
+
+生成覆盖率报告：
+
+```bash
+pytest --cov=src tests/
+```
+
+产出的 HTML 覆盖率报告默认写入 `htmlcov/` 目录，用浏览器打开 `htmlcov/index.html` 即可查看每个模块的覆盖情况。
+
+当前覆盖率目标为 **≥ 60%**，低于该阈值即视为未通过，新增/修改代码不得拉低覆盖率。
+
+### 代码质量检查
+
+Bandit 安全扫描：
+
+```bash
+bandit -r src -lll
+```
+
+flake8 风格检查：
+
+```bash
+flake8 src/ tests/
+```
+
+安全基线要求 **Bandit 零 HIGH 级别问题**，存在任一 HIGH 即不得合并进主分支。
+
+### 测试体系说明
+
+| 测试文件         | 覆盖模块                        | 主要测试内容                               |
+| -------------- | ----------------------------- | ---------------------------------------- |
+| test_registry.py | src/protocols/registry.py     | 协议注册、查找、列举                        |
+| test_mutator.py  | src/protocols/*/mutator.py    | 7 个协议的变异逻辑、边界条件                                    |
+| test_reporter.py | src/core/report_generator.py  | 报告生成、双语切换、PDF 输出                |
+| test_security.py | src/core/security.py          | API Key 加密、HTTPS 校验、打码              |
+
+### 贡献者须知
+
+- **提 PR 前必须**：对受影响协议跑通 `python tools/check_protocol.py <协议名>`（11/11），并确保 `pytest tests/` 全部通过。
+- **新功能必须加测试**：任何新增/修改的模块都必须配套对应的 pytest 用例，否则 PR 不通过。
+- **测试覆盖率不能下降**：提交的改动不得使整体覆盖率低于 60%，也不得降低现有覆盖行。
 
 ***
 

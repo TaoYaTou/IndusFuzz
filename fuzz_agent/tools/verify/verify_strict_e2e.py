@@ -3,7 +3,6 @@ import sys
 import socket
 import subprocess
 import time
-import struct
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 FUZZ_AGENT = os.path.abspath(os.path.join(ROOT, ".."))

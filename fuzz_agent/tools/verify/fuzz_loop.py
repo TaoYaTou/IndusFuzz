@@ -1,6 +1,6 @@
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.protocols.modbus.modbus_tools import build_modbus_request, send_modbus_payload, parse_modbus_response
+from src.protocols.modbus.modbus_tools import build_modbus_request, send_modbus_payload
 from src.protocols.modbus.mutator import mutate_payload
 import time
 

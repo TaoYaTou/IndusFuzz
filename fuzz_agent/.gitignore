@@ -42,3 +42,10 @@ desktop.ini
 *.tmp
 *.bak
 *.old
+
+# ===== 测试基础设施（新增）=====
+.test_pkgs/
+.pytest_cache/
+.coverage
+coverage_html/
+htmlcov/

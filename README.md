@@ -172,8 +172,8 @@ A virtual environment isolates dependencies so they do not affect your system Py
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/IndusFuzz/indusfuzz.git
-cd indusfuzz/fuzz_agent
+git clone https://github.com/TaoYaTou/IndusFuzz.git
+cd IndusFuzz/fuzz_agent
 
 # 2. Create and activate a virtual environment
 python -m venv agentscope_env
@@ -424,6 +424,95 @@ Reports are saved in the `reports/` directory:
 | `run.log` | Raw run log |
 
 Reports contain: statistical summary, risk grading, anomaly distribution, function-code statistics. When a protocol's fuzzing is force-terminated due to the overall timeout, a corresponding notice banner is shown at the top of the report.
+
+---
+
+## Testing
+
+This project uses pytest as its testing framework, covering the four core areas: protocol registration, mutation logic, report generation, and the security module.
+
+### Environment setup
+
+Install test dependencies:
+
+```bash
+pip install pytest pytest-cov bandit flake8
+```
+
+> Test dependencies are only needed during development; running IndusFuzz itself does not require them (see "Dependencies" for runtime requirements).
+
+### Running tests
+
+Run all tests:
+
+```bash
+cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
+pytest tests/ -v
+```
+
+Run a single test file:
+
+```bash
+pytest tests/test_registry.py -v
+pytest tests/test_mutator.py -v
+pytest tests/test_reporter.py -v
+pytest tests/test_security.py -v
+```
+
+Run a single test function:
+
+```bash
+pytest tests/test_security.py -k "test_encrypt" -v
+```
+
+Show detailed output (including per-test duration and temp dirs):
+
+```bash
+pytest tests/ -v --tb=short
+```
+
+### Test coverage
+
+Generate the coverage report:
+
+```bash
+pytest --cov=src tests/
+```
+
+The produced HTML coverage report is written to the `htmlcov/` directory by default. Open `htmlcov/index.html` in a browser to see per-module coverage.
+
+The current coverage target is **≥ 60%**; anything below this threshold is considered a failure, and new/modified code must not lower coverage.
+
+### Code quality checks
+
+Bandit security scan:
+
+```bash
+bandit -r src -lll
+```
+
+flake8 style check:
+
+```bash
+flake8 src/ tests/
+```
+
+The security baseline requires **zero HIGH-severity Bandit issues**; any HIGH present blocks the change from being merged into the main branch.
+
+### Test suite overview
+
+| Test file          | Module covered                    | Main test content                          |
+| ------------------ | --------------------------------- | ------------------------------------------ |
+| test_registry.py   | src/protocols/registry.py         | Protocol registration, lookup, list        |
+| test_mutator.py    | src/protocols/*/mutator.py        | Mutation logic and edge cases for 7 protocols |
+| test_reporter.py   | src/core/report_generator.py      | Report generation, bilingual switch, PDF   |
+| test_security.py   | src/core/security.py              | API key encryption, HTTPS check, masking   |
+
+### Contributor notes
+
+- **Before submitting a PR, you must**: run `python tools/check_protocol.py <protocol>` (11/11) for affected protocols and ensure `pytest tests/` passes fully.
+- **New features require tests**: any new or modified module must ship matching pytest cases, otherwise the PR is rejected.
+- **Coverage must not drop**: your change must not push overall coverage below 60%, nor reduce existing covered lines.
 
 ---
 

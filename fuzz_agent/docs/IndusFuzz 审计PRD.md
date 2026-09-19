@@ -604,7 +604,7 @@ IndusFuzz 是 Windows 桌面 EXE，支持云端 API。API Key 一旦泄露，攻
 
 ### 5.12 协议扩展后的安全基线回归（每次加新协议后必做）
 
-> 功能/兼容性回归走「协议扩展 PRD」的**阶段 7：全面检查**（功能性 8 项），
+> 功能/兼容性回归走「协议扩展 PRD v2.0.0」的**阶段 7：全面检查**（功能性 11 项，7.1~7.11），
 > 本小节只管安全——加了新协议后，安全基线有没有被破坏。
 > 不通过 → 不修完不能进主分支。
 
@@ -612,16 +612,223 @@ IndusFuzz 是 Windows 桌面 EXE，支持云端 API。API Key 一旦泄露，攻
 |---|--------|--------|-------------|
 | 1 | **新 server.py 默认监听 127.0.0.1** | 在 `server/<new>_server.py` 里搜 `0.0.0.0` — 不应命中 | 暴露到公网，任何人都能连 |
 | 2 | **client.py / llm_mutator.py 无硬编码 Key/密码** | `rg -i "sk-[a-z0-9]{10}" src/protocols/<new>/` | 凭据硬编码进仓库，git 历史泄露 |
-| 3 | **llm_mutator.py 有 timeout=25** | `grep -c "timeout=25" src/protocols/<new>/llm_mutator.py` → >= 1 | 反模式 M：云端 LLM 调用无限等 |
+| 3 | **llm_mutator 走基类，基类有 timeout=25 + max_retries=0** | 优先 `rg "class.*llm_mutator" src/protocols/<new>/llm_mutator.py` 确认是薄壳（只 import 基类 + 继承）；独立实现则 `rg "timeout=25" src/protocols/<new>/llm_mutator.py` + `rg "max_retries=0" ...` | 反模式 M：云端 LLM 调用无限等；反模式 V：薄壳膨胀成独立实现 |
 | 4 | **无 eval/exec/pickle.loads/os.system** | `rg "\beval\(|\bexec\(|pickle\.loads|os\.system" src/protocols/<new>/` | 代码注入风险 |
 | 5 | **新协议不出现在 menu/fuzz_loop 的 if-elif** | `rg "elif.*<new>" src/core/` — 不应命中 | 反模式 B：核心代码因新协议膨胀 |
+| 6 | **Bandit 零 HIGH（全局 + 协议级双层扫描）** | ① `bandit -r src/server -lll` 零 HIGH；② `bandit -r src/protocols/<new>/ server/<new>_server.py -lll` 零 HIGH | 协议级安全漏洞直接入包；只扫全局会漏掉新协议引入的局部风险 |
+
+### 5.13 贡献者测试运行 + EXE 发布检查（来自 CONTRIBUTING.md §测试运行 + 协议扩展 PRD 7.11）
+
+> 5.12 只管安全基线，本小节管**贡献者提交前自检**和**绿色 EXE 打包发布**两条流程线，
+> 覆盖 check_protocol/Bandit/Key 残留之外的遗漏环节。
+> 同步自 `fuzz_agent/docs/IndusFuzz 协议扩展 PRD.md` 阶段 7.11。
+
+| # | 检查项 | 怎么查 | 不通过意味着 |
+|---|--------|--------|-------------|
+| **5.13.1** | **模拟从站启动验证** | `python -m src.core.slave_launcher --protocol <new> --port <default_port> --strict` 能成功启动、日志显示监听 `127.0.0.1:<port>`、Ctrl+C 正常退出；或在 `python main.py` 菜单里选"启动模拟从站"能正常启动 | 从站脚本能 import 但启动即崩，fuzz 端到端全断 |
+| **5.13.2** | **单协议完整 fuzz 端到端** | 跑一次交互向导（`python main.py`），选 `<new>` 协议，至少选 3 个功能码，验收链路：① 能发请求到从站 ② 能收响应 ③ 能分类（正常响应 / 超时 / 协议错误 / 连接断开） ④ 能写 HTML 报告到 reports/ 目录 ⑤ 报告中中文正常显示（无乱码、无方块） | 新协议能跑 check_protocol 但 fuzz 实际不通；或报告乱码（simhei.ttf 未正确打包） |
+| **5.13.3** | **功能码五处数量一致（P0 阻断）** | func_codes JSON 条目数 = client.py 默认端口映射数 = mutator 变异覆盖数 = server `_REQUEST_TYPES` 或等效列表数 = report_generator `PROTOCOL_CONFIG` 条目数；任一不一致 → 禁止进主分支 | 报告显示的功能码和实际变异发的功能码对不上；或 mutator 变异 JSON 里不存在的功能码导致 IndexError |
+| **5.13.4** | **CHANGELOG 已更新** | CHANGELOG.md 对应版本段的 Added / Changed / Fixed 下有本次改动条目 | 贡献者流程不合规，发版时变更追溯困难 |
+| **5.13.5** | **依赖可控** | requirements.txt 无意外新增条目（每次打包前 `git diff` 确认）；如确需新增，必须在 PR 描述中说明必要性 | 隐式拉进了恶意包（PyPI 投毒风险）；或打包后 EXE 体积异常膨胀 |
+| **5.13.6** | **EXE 打包后完整 fuzz 验证（绿色发布时追加）** | 用 `dist/IndusFuzz.exe` 而非源码跑一轮完整 fuzz，验收同 5.13.2，额外确认 EXE 退出后 reports/ 目录有新生成的报告文件 | EXE 能启动但 fuzz 逻辑有 `sys._MEIPASS` 相关 bug；或从站通过 subprocess 无法被 EXE 拉起 |
+
+### 5.14 pytest 测试代码质量审计（tests/ 目录专项）
+
+> 5.12/5.13 管"生产代码能不能安全跑、fuzz 能不能端到端通"，
+> 5.14 管"用来验证这些的测试代码本身是不是合格"。
+> **信任边界**：不能因为 pytest 通过 94/97 就断言项目没问题 — 要先确认"覆盖了关键路径、fixture 没竞态、没假阳性"。
+
+#### 5.14.1 目录结构与命名
+
+| 规则 | 检查方法 | 不通过意味着 |
+|------|----------|-------------|
+| **pytest 测试文件使用 `test_*.py` 命名** | `ls tests/test_*.py` 列出所有 pytest 收集的文件；同时跑 `pytest tests/ --collect-only -q` 确认被收集的测试文件全部以 `test_` 开头 | verify_*.py / debug_*.py 等临时脚本混在 tests/ 里被误收集，或真正的测试文件没被 pytest 收集 |
+| **非 pytest 脚本不混入 tests/** | verify_*.py / 临时调试脚本统一放项目根 `tools/verify/` 或 `scripts/`；tests/ 下只留 test_*.py + conftest.py + __init__.py + 必要的 helpers（命名前缀 `_`） | 贡献者看到目录混乱，误判哪些是正式测试 |
+| **helpers 目录/文件命名清晰** | fixtures/mocks/helpers 统一放 `tests/_helpers/`（或 `tests/conftest.py`），禁止直接叫 `fuzz_loop.py` / `modbus_client.py`（与 src/ 重名易混淆） | `import tests.fuzz_loop` 和 `import src.core.fuzz_loop_llm` 两条 import 路径并存，贡献者写新测试时容易写错 |
+| **禁止硬编码绝对路径** | `rg "D:\\|C:\\" tests/` 零命中（用 `tempfile.mkdtemp()` 或项目相对路径） | 测试只能在作者机器上跑，CI 一跑就崩 |
+
+#### 5.14.2 测试基础设施
+
+| 规则 | 检查方法 | 不通过意味着 |
+|------|----------|-------------|
+| **有 pytest 配置文件** | 项目根存在 `pytest.ini` 或 `pyproject.toml` 含 `[tool.pytest.ini_options]`，至少配 `testpaths = tests` + `addopts = --tb=short --strict-markers` | 贡献者本地跑 pytest 输出和 CI 不一致（CI 加了 `--cov` 但本地没，或反之） |
+| **pytest-cov 已装 + 覆盖率门禁** | `pip show pytest-cov` 存在；`pytest tests/ --cov=src --cov-fail-under=XX` 作为 CI 门禁 | 不知道自己测了多少；覆盖率 16% 以下就放行等于没测 |
+| **核心模块覆盖率不低于 30%** | `pytest tests/ --cov=src --cov-report=term-missing` 后看 fuzz_loop_llm / client.py / llm_mutator_base / slave_launcher 四个关键模块 | 如果 fuzz_loop_llm.py 是 0%，那 fuzz 主循环有没有 bug 全靠运气 |
+| **pytest-timeout 可选装 + CI 默认启用** | `pip show pytest-timeout`；CI 用 `--timeout=60` 防止 fixture 死锁或 socket 测试 hang 住 | 某个 mock 写错导致 recv 永远阻塞，测试跑半小时没人发现 |
+| **flake8 可用（或等效 lint）** | `pip show flake8` 或 CONTRIBUTING.md 声明用 ruff/pylint | CONTRIBUTING.md 第 3.3 行说"flake8"但实际没装，贡献者 lint 命令跑不通 |
+| **conftest.py 与生产代码耦合度低** | conftest.py 不 import 生产逻辑（只 import fixture 依赖）；不做真实 socket 连接 | 测试启动依赖 Ollama 或从站，CI 没装就崩 |
+
+#### 5.14.3 Fixture 隔离与反模式
+
+| 规则 | 检查方法 | 不通过意味着 |
+|------|----------|-------------|
+| **autouse fixture 不覆盖业务 fixture 的初始化** | 如 `_isolate_registry` 这种 fixture，`setup` 时保存的快照不能在测试执行期间被其他代码修改后、teardown 又恢复回旧快照（典型竞态） | 测试看起来跑通/failed，但实际验证的是 fixture 生命周期 bug，不是业务代码 bug |
+| **fixture 作用域显式声明** | `@pytest.fixture(scope="function")` / `scope="module"`，避免默认 scope 导致跨测试污染 | 一个测试改了 registry，下一个测试继承了脏状态，间歇性 flaky |
+| **mock 不打错模块层级（反模式 Z）** | mock 前 `rg` 确认被测模块真实 import 路径（如 `from src.protocols.modbus import mutator` vs `from . import mutator`）；禁 LLM 测试必须在装 openai 的 venv 下跑 | mock 打在了没人用的路径上，被测路径绕过 mock 直接走真逻辑（测 LLM 时自动发真实 API 调用） |
+| **fixture teardown 幂等 + 无副作用** | 多次跑同一个 fixture 不报错；`shutil.rmtree(path, ignore_errors=True)` | teardown 失败抛异常导致后续 5 个测试 skip，看不到真正的 bug |
+| **临时文件/目录用 `tempfile.mkdtemp()` + teardown 清理** | 禁止在 `reports/` 目录写真实报告文件（测试会留垃圾） | 跑了 20 轮测试后 reports/ 目录堆了 200 个垃圾 HTML |
+
+#### 5.14.4 断言质量
+
+| 规则 | 检查方法 | 不通过意味着 |
+|------|----------|-------------|
+| **禁止 `assert True` / `or True` 形式的空断言** | `rg 'assert True| or True' tests/` 零命中 | 断言永远通过，相当于没测 |
+| **断言有实际业务含义** | 例如测试 mutator：不仅断言返回 bytes，还要断言长度不变 / 不是全零 / 至少一个字节被变异 | 能通过类型检查但变异逻辑坏了（比如把 payload 原封不动返回），测试照样 PASS |
+| **parametrize 覆盖全 7 协议** | `rg parametrize tests/test_mutator.py` 确认有 `proto` 参数覆盖全部 `_PROTO_NAMES` | 只测 modbus，s7comm/dnp3 等 6 个协议 mutator 有 bug 发现不了 |
+| **异常路径也有断言** | 不仅测 happy path（`assert encrypt_key(x) == x`），还要测空输入、超长输入、非法字符等边界 | 生产代码异常处理逻辑有 bug，只有走真实 fuzz 才会触发，但 fuzz 测试又不覆盖 |
+| **安全类测试覆盖 XSS / HTTPS / Key 打码** | 已测但要确认：`_esc('<img src=x onerror=alert(1)>')` 真的被转义；`validate_cloud_url('http://api.openai.com', 'openai')` 真的拒绝 HTTP | 报告生成器有存储型 XSS 但测试只断言了 plain text；或 HTTPS 强制逻辑被绕过但测试只测了 ollama 本地 |
+
+#### 5.14.5 运行时验证（审计必须亲自执行）
+
+| 步骤 | 命令 | 通过标准 |
+|------|------|----------|
+| 1. 收集测试 | `pytest tests/ --collect-only -q` | 全部被收集，无 import error |
+| 2. 全量执行 | `pytest tests/ -v --tb=short` | **failed=0, xfailed=0**（xfail 需显式标记 `pytest.mark.xfail`） |
+| 3. 覆盖报告 | `pytest tests/ --cov=src --cov-report=term-missing` | fuzz_loop_llm / client / llm_mutator_base / slave_launcher 四个关键模块覆盖率 ≥ 30% |
+| 4. Bandit 扫测试代码 | `bandit -r tests/ -lll` | 零 HIGH（禁止 eval/exec/subprocess.Popen 未等待） |
+| 5. flake8 检查（如已装） | `flake8 tests/ --max-line-length=120` | 零 error / warning（flake8 E/F 前缀） |
+| 6. verify_*.py 不是 pytest | `pytest tests/ -k verify_ --collect-only -q` | 收集数为 0（临时脚本没被 pytest 当成测试） |
+
+**当前实测值（2026-09-19）**：
+
+| 指标 | 实测值 | 门禁 | 状态 |
+|------|--------|------|------|
+| pytest collected | 97 | — | ✅ |
+| pytest PASSED | 94 | failed=0 | ❌ 3 failed |
+| pytest FAILED | 3 | 必须 0 | ❌ |
+| 总覆盖率 | 16% | — | ⚠️ |
+| fuzz_loop_llm.py | 0% | ≥ 30% | ❌ |
+| client.py (7 协议) | 9-11% | ≥ 30% | ❌ |
+| llm_mutator.py (7 协议) | 0% | ≥ 30% | ❌ |
+| slave_launcher.py | 0% | ≥ 30% | ❌ |
+| flake8 / pytest-timeout | 未装 | — | ⚠️ |
+| pytest.ini / pyproject.toml | 无 | 必须有 | ❌ |
+| verify_*.py 混入 tests/ | 8 个 | 0 | ❌ |
+
+#### 放行判定矩阵
+
+| 条件 | 全部满足才放行 |
+|------|----------------|
+| ① | pytest 全过（failed=0） |
+| ② | 四个关键模块（fuzz_loop_llm / client / llm_mutator_base / slave_launcher）覆盖率 ≥ 30% |
+| ③ | 有 pytest 配置文件 |
+| ④ | tests/ 下无 verify_*.py / 临时脚本 |
+| ⑤ | conftest.py 无 fixture 竞态（单独跑 + parametrize 跑结果一致） |
+| ⑥ | 无 `assert True` / `or True` 空断言 |
+| ⑦ | Bandit 扫 tests/ 零 HIGH |
+
+**当前判定**：❌ **不放行** — 条件 ① ② ③ ④ ⑤ ⑥ 全部未满足
 
 ---
 
+### 审计 PRD 与协议扩展 PRD 阶段 7 的对应关系
+
+| 审计 PRD 节 | 对应阶段 7 | 侧重 |
+|---|---|---|
+| 5.12 安全基线回归 | 7.1 / 7.7 / 7.8 / 7.9 | 安全维度（bandit / key / timeout / 反模式） |
+| 5.13 贡献者测试 + EXE 发布 | 7.11 | 流程维度（从站启动 / fuzz 端到端 / 功能码五处一致 / CHANGELOG / 依赖 / EXE 打包后 fuzz） |
+| 5.14 pytest 测试代码质量 | —（项目级，非协议级） | 测试代码本身质量（目录结构 / fixture 隔离 / 断言质量 / 覆盖率 / flake8） |
+| 5.15 目录规范体检 | —（项目级，每发布前执行） | 项目目录结构合规性（12 维度全量扫描） |
+| — | 7.2 / 7.3 / 7.4 / 7.5 / 7.6 / 7.10 | 协议数量 / menu / slave 存在 / 真实设备握手（由审计专家在每轮审计收尾统一执行） |
 
 ---
 
-#
+### 5.15 目录规范体检（每发布前 / 每加新协议后执行）
+
+> 5.12-5.14 管"代码能不能安全跑"，5.15 管"项目目录长得对不对"。
+> **执行原则**：只检查不修改；不信任声明只信任 `Test-Path` / `git check-ignore` / pytest 实测。
+
+#### 5.15.1 检查维度（12 项）
+
+| # | 维度 | 核心检查点 | P0 触发条件 |
+|---|------|-----------|------------|
+| 1 | 顶层目录结构 | main.py / requirements.txt / README* / CHANGELOG / CONTRIBUTING / LICENSE / .gitignore / src / server / tools / tests / docs / assets / reports | 缺少 main.py 或 src/ → P0 |
+| 2 | src/ 结构 | __init__.py + core / protocols / integrations 三目录 + 全 snake_case 命名 | 缺 protocols/ → P0 |
+| 3 | src/core/ 内容 | version / menu / fuzz_loop_llm / report_generator / slave_launcher / security / llm_precheck / llm_status / runtime_config / diagnose / gpu_detector / color_output / result_analyzer 共 13 个 | 缺 menu.py 或 fuzz_loop_llm.py → P0 |
+| 4 | src/protocols/ 结构 | base.py + registry.py + llm_mutator_base.py + func_codes/ + 每个协议独立子目录 | 缺 registry.py → P0 |
+| 5 | func_codes/ 完整性 | 7 协议 × JSON 存在 + 每个 JSON 含 protocol / default_port / func_codes 数组非空 | 任一 JSON 缺字段 → P0 |
+| 6 | server/ 从站脚本 | 7 个 *_server.py 存在 + 支持 --port / --strict + 默认绑定 127.0.0.1 | 任一从站脚本缺 --port 或绑定 0.0.0.0 → P0 |
+| 7 | tests/ 目录 | conftest.py + 4 个 test_*.py + 无 verify_*.py 混入 + 无 legacy/（legacy 应移 tools/legacy/） | verify_*.py 在 tests/ 里 → P2；legacy/ 在 tests/ → P2 |
+| 8 | tools/ 目录 | check_protocol.py + clean_before_release.py + verify/ + legacy/ | 缺 check_protocol.py → P1 |
+| 9 | .github/ 配置 | workflows/test.yml + workflows/release.yml + ISSUE_TEMPLATE 3 个 + PULL_REQUEST_TEMPLATE.md | 全缺 → P2；缺 CI workflow → P1 |
+| 10 | assets/ 资源 | fonts/simhei.ttf（PDF 中文） + icons/（icon.ico 或等效多尺寸 PNG） | 缺 simhei.ttf → P0（PDF 中文变方块） |
+| 11 | 临时文件 | __pycache__ / *.pyc / .pytest_cache / .coverage / htmlcov / build/ / dist/ / *.log / *.tmp / reports/*.html / *.pdf 必须 .gitignore 且未提交 | 已提交的报告文件或 __pycache__ → P0（敏感信息泄露） |
+| 12 | .gitignore 完整性 | Python 缓存 / 虚拟环境 / 测试缓存 / 打包产物 / 报告输出 / 敏感文件 / 操作系统文件 / IDE 共 8 类 | 缺 agentscope_env/ 或 reports/ → P1 |
+
+#### 5.15.2 执行命令清单（审计必须亲自执行）
+
+```powershell
+# Step 1 — 完整目录树
+cd fuzz_agent
+Get-ChildItem -Recurse -File | Where-Object {
+    $_.FullName -notmatch '\\\.git\\|agentscope_env|__pycache__|\.pytest_cache|htmlcov|build|dist'
+} | Select-Object FullName | Sort-Object
+
+# Step 2 — 顶层必存在文件
+@(
+  'main.py','requirements.txt','README.md','CHANGELOG.md',
+  'CONTRIBUTING.md','LICENSE','.gitignore','IndusFuzz.spec'
+) | ForEach-Object { "$_ : $(Test-Path $_)" }
+
+# Step 3 — src/core 必存在 13 个
+$core = @(
+  'version.py','menu.py','fuzz_loop_llm.py','report_generator.py',
+  'slave_launcher.py','security.py','llm_precheck.py','llm_status.py',
+  'runtime_config.py','diagnose.py','gpu_detector.py','color_output.py',
+  'result_analyzer.py'
+)
+$core | ForEach-Object { "$_ : $(Test-Path src/core/$_)" }
+
+# Step 4 — func_codes 字段完整性（含非空断言）
+python -c "
+import json, os
+for f in os.listdir('src/protocols/func_codes'):
+    if f.endswith('.json'):
+        d = json.load(open(f'src/protocols/func_codes/{f}', encoding='utf-8'))
+        has_p = 'protocol' in d; has_port = 'default_port' in d
+        codes_ok = isinstance(d.get('func_codes'), list) and len(d['func_codes']) > 0
+        print(f'{f}: protocol={has_p} port={has_port} codes={codes_ok} n={len(d.get(\"func_codes\",[]))}')
+"
+
+# Step 5 — 7 协议 check_protocol 自检
+foreach ($p in modbus,s7comm,dnp3,iec104,iec61850,enip,opcua) {
+  python tools/check_protocol.py $p
+}
+
+# Step 6 — pytest 收集
+pytest tests/ --collect-only -q
+
+# Step 7 — git status + .gitignore 检查
+git status --short
+git check-ignore -v __pycache__ .pytest_cache reports/ agentscope_env 2>&1
+
+# Step 8 — .gitignore 关键模式
+Select-String .gitignore -Pattern '__pycache__','agentscope_env','reports/','dist/','build/','*.spec.bak','htmlcov'
+```
+
+#### 5.15.3 放行判定（7 条，全部满足才放行）
+
+| # | 条件 |
+|---|------|
+| ① | 维度 1-4 / 5（func_codes 字段） / 6（server 绑定 127.0.0.1） / 10（simhei.ttf）零 P0 |
+| ② | 维度 11 零**已提交**的临时文件（git ls-files 无 __pycache__ / *.pyc / reports/*.html 等） |
+| ③ | 维度 12 .gitignore 覆盖 8 类关键模式 |
+| ④ | 7 协议 check_protocol.py 全 PASS |
+| ⑤ | pytest collect-only 97 items（与代码现状一致） |
+| ⑥ | git status 无意外未跟踪文件（非 __pycache__ / .pytest_cache / coverage_html / 预期报告） |
+| ⑦ | 无 verify_*.py / legacy/ 留在 tests/ 里 |
+
+#### 当前已知遗留项（2026-09-19 实测）
+
+| 维度 | 已知问题 | 级别 |
+|------|----------|------|
+| 7 tests/ | tests/legacy/ 仍存在（两个 scapy helper），verify_*.py 已移至 tools/verify/ | P2 |
+| 9 .github/ | 全缺（无 CI workflow / issue template / PR template） | P2 |
+| 11 临时文件 | coverage_html/ 生成在项目根 + .pytest_cache/ + __pycache__/ 散落在各目录 | 需 .gitignore 验证 |
+| 12 .gitignore | 需查是否覆盖 htmlcov / coverage_html 等新增模式 | 待验证 |
+
+---
+
 ### 审计检查方法（必须全部执行）
 
 1. **逐文件通读**：不依赖 IDE 提示，直接读源码

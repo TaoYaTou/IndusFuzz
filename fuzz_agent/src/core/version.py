@@ -1,8 +1,61 @@
-"""
-IndusFuzz 版本号唯一来源。
+﻿"""IndusFuzz version — single source of truth.
 
-所有需要显示版本号的地方（main.py 启动横幅、报告生成器等）
-都应从此模块导入 __version__，避免硬编码导致版本不一致。
-"""
+Prefers git describe when available (production build with tags),
+falls back to HARDCODED_VERSION for dev environments without git tags.
 
-__version__ = "1.8.0"
+All version references (main.py banner, report_generator, CLI --version)
+import from here — do NOT hardcode version strings elsewhere.
+"""
+import os
+import subprocess
+
+
+HARDCODED_VERSION = "1.8.1"
+
+
+def _from_git():
+    """Try `git describe --tags --always --dirty`.
+
+    Returns the git-derived version string, or None if git is unavailable.
+    """
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        # Walk up to project root (src/core/ → project/)
+        project_root = os.path.dirname(os.path.dirname(here))
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--always", "--dirty"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            raw = result.stdout.strip()
+            # Strip leading 'v' if present: v1.8.0 → 1.8.0
+            if raw.startswith("v"):
+                raw = raw[1:]
+            return raw
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+    return None
+
+
+def get_version():
+    """Return the current version string.
+
+    Resolution order:
+      1. Environment override INDUSFUZZ_VERSION (CI / packaging)
+      2. git describe --tags --always --dirty
+      3. HARDCODED_VERSION
+    """
+    env = os.environ.get("INDUSFUZZ_VERSION")
+    if env:
+        return env
+    git_ver = _from_git()
+    if git_ver:
+        return git_ver
+    return HARDCODED_VERSION
+
+
+__version__ = get_version()
+

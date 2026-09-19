@@ -1738,6 +1738,15 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
   - [ ] menu.py PROTOCOL_CONNECT_PARAMS 含新协议（`rg '"<new>":' src/core/menu.py` 命中）
   - [ ] README.md + README.zh.md 的"真实设备测试指南"含新协议章节
 
+- [ ] **7.11 贡献者测试运行检查**（来自 CONTRIBUTING.md §测试运行 + §提交前自检，审计收尾强制项，仅规则、不自动执行）
+  - [ ] **7.11.1 Bandit 扫描范围补全**：`bandit -r src/server -lll` 零 HIGH；`bandit -r src/protocols/<new>/ server/<new>_server.py -lll` 零 HIGH（7.9.6 仅定性，本条定范围）
+  - [ ] **7.11.2 模拟从站启动验证**：`python -m src.core.slave_launcher --protocol <new> --port <default_port> --strict` 能成功启动、日志显示监听 `127.0.0.1:<port>`、Ctrl+C 正常退出；或在 `python main.py` 菜单里选"启动模拟从站"能正常启动
+  - [ ] **7.11.3 单协议完整 fuzz 端到端**：跑一次交互向导（`python main.py`），选 <new> 协议，至少选 3 个功能码，验收链路：① 能发请求到从站 ② 能收响应 ③ 能分类（正常响应 / 超时 / 协议错误 / 连接断开） ④ 能写 HTML 报告到 reports/ 目录 ⑤ 报告中中文正常显示（无乱码、无方块）
+  - [ ] **7.11.4 功能码五处数量一致**（PRD 十七章 + CONTRIBUTING.md 提交前自检）：func_codes JSON 条目数 = client.py 默认端口映射数 = mutator 变异覆盖数 = server `_REQUEST_TYPES` 或等效列表数 = report_generator `PROTOCOL_CONFIG` 条目数（任一不一致视为 P0 阻断，禁止进主分支）
+  - [ ] **7.11.5 CHANGELOG 已更新**：新增/修改/修复条目已加入 CHANGELOG.md 对应版本段的 Added / Changed / Fixed 下
+  - [ ] **7.11.6 依赖可控**：requirements.txt 无意外新增条目（每次打包前 diff 确认；如确需新增依赖，必须在 PR 描述中说明必要性）
+  - [ ] **7.11.7 EXE 打包后完整 fuzz 验证**（绿色 EXE 发布时追加）：用 `dist/IndusFuzz.exe` 而非源码跑一轮完整 fuzz，验收同 7.11.3，额外确认 EXE 退出后 reports/ 目录有新生成的报告文件
+
 **DNP3 接入 Checklist 完成情况**：
 ```
 阶段 1：✅ 查完整功能码表（31 请求 + 2 响应），帧格式 0x0564 起始 + CRC16，端口 20000

@@ -5,7 +5,6 @@ LLM 预连通性检查 + fuzz 整体超时熔断。
 失败时会把 fuzz_llm_status 置为 error 并记录原因。
 """
 import time
-import traceback
 
 
 LLM_PRECHECK_TIMEOUT = 15   # 预连通性测试超时（秒）

@@ -7,7 +7,6 @@ import glob
 import socket
 import subprocess
 import argparse
-import random
 
 ROOT = r"d:\Application\AllToolsSet\AgnetPrograms\IndusFuzz"
 FUZZ_AGENT = os.path.join(ROOT, "fuzz_agent")

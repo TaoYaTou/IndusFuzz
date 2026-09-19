@@ -586,10 +586,10 @@ def _render_severity_group(level_class, level_title, items, protocol_name, lang=
             impact = r.get('impact', '') or ''
             html.append(
                 f"<tr class='{level_class}' data-severity='{level_class}' data-func='0x{fc:02X}'>"
-                f"<td>{r.get('round','')}</td>"
+                f"<td>{r.get('round', '')}</td>"
                 f"<td>0x{fc:02X} ({fname})</td>"
                 f"<td>{_break_long_text(mut, 14)}</td>"
-                f"<td>{r.get('classification','')}</td>"
+                f"<td>{r.get('classification', '')}</td>"
                 f"<td>{impact}</td>"
                 f"</tr>"
             )
@@ -879,7 +879,7 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
                 fc_str = f"0x{int(fc):02X}" if not isinstance(fc, str) else fc
             except Exception:
                 fc_str = str(fc)
-            h.append(f"<tr class='skip'><td>{s.get('round','')}</td><td>{fc_str}</td><td>{_esc(s.get('reason',''))}</td></tr>")
+            h.append(f"<tr class='skip'><td>{s.get('round', '')}</td><td>{fc_str}</td><td>{_esc(s.get('reason', ''))}</td></tr>")
     else:
         h.append(f"<tr><td colspan='3'>{t('无跳过项 / None', 'None')}</td></tr>")
     h.append("</table>")
@@ -895,7 +895,7 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
                 fc_str = f"0x{int(fc):02X}" if not isinstance(fc, str) else fc
             except Exception:
                 fc_str = str(fc)
-            h.append(f"<tr class='fail'><td>{fc_str}</td><td>{f.get('stage','')}</td><td>{_esc(f.get('reason',''))}</td></tr>")
+            h.append(f"<tr class='fail'><td>{fc_str}</td><td>{f.get('stage', '')}</td><td>{_esc(f.get('reason', ''))}</td></tr>")
     else:
         h.append(f"<tr><td colspan='3'>{t('无构建失败 / None', 'None')}</td></tr>")
     h.append("</table>")
@@ -1032,9 +1032,9 @@ def generate_report(results, skipped=None, build_failures=None, protocol_name="m
 
     with open(log_path, "w", encoding="utf-8") as f:
         for r in results:
-            f.write(f"Round: {r.get('round')}, FuncCode: 0x{r.get('func_code',0):02X}, ")
+            f.write(f"Round: {r.get('round')}, FuncCode: 0x{r.get('func_code', 0):02X}, ")
             f.write(f"Mutation: {r.get('mutation')}, Response: {r.get('response')}, ")
-            f.write(f"Classification: {r.get('classification')}, Severity: {r.get('severity','')}\n")
+            f.write(f"Classification: {r.get('classification')}, Severity: {r.get('severity', '')}\n")
         f.write("\n--- Skipped ---\n")
         for s in skipped:
             f.write(f"Skipped Round {s.get('round')} Func {s.get('func_code')}: {s.get('reason')}\n")
@@ -1201,7 +1201,7 @@ def generate_combined_report(all_protocol_data, scenario="lan", protocol_errors=
         cc = sum(1 for r in res if r.get("classification") == "CONN_CLOSED")
         emp = sum(1 for r in res if r.get("classification") == "EMPTY")
         status = "超时 / Timeout" if pd.get("protocol_timed_out") else "完成 / Done"
-        html_parts.append(f"<tr><td>{_get_display_name(pname)}</td><td>{_esc(pd.get('target',''))}</td><td>{len(res)}</td><td>{exc}</td><td>{cc}</td><td>{emp}</td><td>{status}</td></tr>")
+        html_parts.append(f"<tr><td>{_get_display_name(pname)}</td><td>{_esc(pd.get('target', ''))}</td><td>{len(res)}</td><td>{exc}</td><td>{cc}</td><td>{emp}</td><td>{status}</td></tr>")
     html_parts.append("</table>")
 
     # 协议级错误信息（整合到主报告，不再单独生成 error_report）
@@ -1215,7 +1215,7 @@ def generate_combined_report(all_protocol_data, scenario="lan", protocol_errors=
             reason = _esc(e.get("reason") or e.get("error_msg", ""))
             elapsed = e.get("elapsed", "?")
             elapsed_str = f"{elapsed}s" if isinstance(elapsed, (int, float)) else str(elapsed)
-            html_parts.append(f"<tr><td>{_esc(e.get('protocol','?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
+            html_parts.append(f"<tr><td>{_esc(e.get('protocol', '?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
         html_parts.append("</table>")
 
     html_parts.append("<div id='protocol-sections'>")
@@ -1287,7 +1287,7 @@ def generate_combined_report(all_protocol_data, scenario="lan", protocol_errors=
         cc = sum(1 for r in res if r.get("classification") == "CONN_CLOSED")
         emp = sum(1 for r in res if r.get("classification") == "EMPTY")
         status = "Timeout" if pd.get("protocol_timed_out") else "Done"
-        en_parts.append(f"<tr><td>{_get_display_name(pname)}</td><td>{_esc(pd.get('target',''))}</td><td>{len(res)}</td><td>{exc}</td><td>{cc}</td><td>{emp}</td><td>{status}</td></tr>")
+        en_parts.append(f"<tr><td>{_get_display_name(pname)}</td><td>{_esc(pd.get('target', ''))}</td><td>{len(res)}</td><td>{exc}</td><td>{cc}</td><td>{emp}</td><td>{status}</td></tr>")
     en_parts.append("</table>")
     if protocol_errors:
         en_parts.append("<h2>Failed Protocols</h2>")
@@ -1297,7 +1297,7 @@ def generate_combined_report(all_protocol_data, scenario="lan", protocol_errors=
             reason = _esc(e.get("reason") or e.get("error_msg", ""))
             elapsed = e.get("elapsed", "?")
             elapsed_str = f"{elapsed}s" if isinstance(elapsed, (int, float)) else str(elapsed)
-            en_parts.append(f"<tr><td>{_esc(e.get('protocol','?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
+            en_parts.append(f"<tr><td>{_esc(e.get('protocol', '?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
         en_parts.append("</table>")
     for pd in all_protocol_data:
         pname = pd["protocol_name"]
@@ -1431,7 +1431,7 @@ def generate_error_report(errors, total_protocols, llm_config=None, suggestion="
             reason = _esc(e.get("reason") or e.get("error_msg", ""))
             elapsed = e.get("elapsed", "?")
             elapsed_str = f"{elapsed}s" if isinstance(elapsed, (int, float)) else str(elapsed)
-            lines.append(f"<tr class='{row_class}'><td>{_esc(e.get('protocol','?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
+            lines.append(f"<tr class='{row_class}'><td>{_esc(e.get('protocol', '?'))}</td><td>{etype}</td><td>{elapsed_str}</td><td>{reason}</td></tr>")
         lines.append("</table>")
 
         if llm_config:

@@ -1,6 +1,5 @@
 import os
 import sys
-import re
 
 FUZZ_AGENT = r"d:\Application\AllToolsSet\AgnetPrograms\IndusFuzz\fuzz_agent"
 sys.path.insert(0, FUZZ_AGENT)

@@ -1,6 +1,5 @@
 import sys
 import socket
-import struct
 from src.protocols.base import ProtocolBase
 
 

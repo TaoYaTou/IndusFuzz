@@ -2,7 +2,7 @@ import os
 import json
 import urllib.request
 import socket
-from src.core.color_output import print_ok, print_warn, print_error, print_info
+from src.core.color_output import print_ok, print_warn, print_error
 
 from src.core import security
 from src.core._resource import resource_path

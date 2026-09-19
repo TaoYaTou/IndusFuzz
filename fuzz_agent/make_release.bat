@@ -1,10 +1,13 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 setlocal
 
 cd /d "%~dp0"
 
-set "VERSION=1.8.0"
+REM Dynamically read version from src/core/version.py (single source of truth)
+set "VENV_PY=%~dp0..\agentscope_env\Scripts\python.exe"
+for /f "usebackq delims=" %%v in ("%VENV_PY%" -c "import sys; sys.path.insert(0, r'%~dp0'); from src.core.version import get_version; print(get_version())" 2^>nul) do set "VERSION=%%v"
+if "%VERSION%"=="" set "VERSION=1.8.0"
 set "RELEASE_DIR=IndusFuzz-v%VERSION%-win64"
 set "ZIP_NAME=IndusFuzz-v%VERSION%-win64.zip"
 
@@ -74,3 +77,4 @@ echo   发布包生成成功！
 echo   %ZIP_NAME%
 echo ============================================
 pause
+

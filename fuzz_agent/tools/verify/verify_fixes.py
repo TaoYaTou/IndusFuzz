@@ -33,7 +33,6 @@ check("Error HTML has suggestion", "test suggestion" in eh)
 check("Error PDF generated", os.path.exists(err_pdf) and os.path.getsize(err_pdf) > 1000)
 
 # Verify PDF source has no Chinese by re-running the internal builder logic
-import src.core.report_generator as rg
 # Build en html manually by checking the function's en path
 # We'll just confirm the generated HTML (bilingual) has Chinese but we separately
 # ensure PDF path uses en. Since we can't inspect tmp, check that the bilingual

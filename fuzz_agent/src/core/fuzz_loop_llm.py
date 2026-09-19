@@ -10,16 +10,15 @@ import getpass
 
 sys.dont_write_bytecode = True
 
-from src.core.color_output import print_ok, print_warn, print_error, print_info
+from src.core.color_output import print_ok, print_error, print_info
 from src.core._resource import app_dir
 
-from src.protocols.registry import get_protocol, list_protocols, auto_load_builtin
+from src.protocols.registry import get_protocol, auto_load_builtin
 from src.core.report_generator import generate_combined_report
 from src.core.llm_status import LLMStatus
 from src.core.llm_precheck import (
     precheck_llm,
     PROTOCOL_FUZZ_TIMEOUT,
-    make_timeout_excepthook_for_protocol,
 )
 
 
@@ -336,7 +335,7 @@ def run(config):
     if protocol_errors:
         print(f"\n⚠️  有 {len(protocol_errors)} 个协议出现问题：")
         for e in protocol_errors:
-            print(f"  [{e.get('error_type','?')}] {e['protocol']}: {e.get('reason', e.get('error_msg',''))}")
+            print(f"  [{e.get('error_type', '?')}] {e['protocol']}: {e.get('reason', e.get('error_msg', ''))}")
 
     if all_protocol_data:
         try:
@@ -419,7 +418,7 @@ def _summarize_suggestions(protocol_errors, model_cfg):
         else:
             tips_zh.append(
                 f"- {timeout_count} 个协议 fuzz 超时（已完成 {completed}/{total} 个功能码）。\n"
-                f"  当前使用云端 LLM: {provider} @ {model_cfg.get('base_url','')}\n"
+                f"  当前使用云端 LLM: {provider} @ {model_cfg.get('base_url', '')}\n"
                 f"  可能原因：云端 API 响应过慢或网络不稳定。\n"
                 f"  建议：\n"
                 f"    1) 在菜单中选择更少的功能码\n"
@@ -428,7 +427,7 @@ def _summarize_suggestions(protocol_errors, model_cfg):
             )
             tips_en.append(
                 f"- {timeout_count} protocol(s) timed out ({completed}/{total} function codes completed).\n"
-                f"  Currently using cloud LLM: {provider} @ {model_cfg.get('base_url','')}\n"
+                f"  Currently using cloud LLM: {provider} @ {model_cfg.get('base_url', '')}\n"
                 f"  Possible cause: slow cloud API response or unstable network.\n"
                 f"  Suggestions:\n"
                 f"    1) Select fewer function codes in the menu\n"

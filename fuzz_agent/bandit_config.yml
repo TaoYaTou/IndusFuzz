@@ -1,0 +1,10 @@
+exclude_dirs:
+  - tests
+  - build
+  - dist
+  - reports
+  - docs
+skip:
+  - B101
+  - B105
+  - B106

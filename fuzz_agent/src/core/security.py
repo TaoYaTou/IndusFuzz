@@ -1,10 +1,9 @@
 import base64
-import os
 
 
 def _has_win32crypt():
     try:
-        import win32crypt
+        import win32crypt  # noqa: F401
         return True
     except ImportError:
         return False

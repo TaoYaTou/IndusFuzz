@@ -1,8 +1,6 @@
 import os
 import sys
 import glob
-import importlib
-import inspect
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 FUZZ_AGENT = os.path.abspath(os.path.join(ROOT, ".."))
@@ -19,7 +17,7 @@ def check(item, expect, got):
 
 
 try:
-    import src.core.fuzz_loop_llm as fll
+    import src.core.fuzz_loop_llm  # noqa: F401
     check("7.2 fuzz_loop_llm 导入", "OK", "OK")
 except Exception as e:
     check("7.2 fuzz_loop_llm 导入", "OK", f"CRASH: {e}")
@@ -31,7 +29,7 @@ check("7.2 registry 协议数", "7", str(len(protocols)))
 check("7.2 registry 协议列表", "dnp3,enip,iec104,iec61850,modbus,opcua,s7comm", ",".join(protocols))
 
 try:
-    import src.core.menu as menu_mod
+    import src.core.menu  # noqa: F401
     check("7.3 menu.py 导入", "OK", "OK")
 except Exception as e:
     check("7.3 menu.py 导入", "OK", f"CRASH: {e}")

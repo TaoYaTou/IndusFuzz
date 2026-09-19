@@ -8,7 +8,17 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $ProjectRoot = $PSScriptRoot
 $FuzzDir = Join-Path $ProjectRoot "fuzz_agent"
 $VenvPy = Join-Path $ProjectRoot "agentscope_env\Scripts\python.exe"
-$Version = "1.8.0"
+# Dynamically read version from src/core/version.py (single source of truth)
+try {
+    $VersionOutput = & $VenvPy -c "import sys; sys.path.insert(0, r'$FuzzDir'); from src.core.version import get_version; print(get_version())" 2>&1
+    if ($LASTEXITCODE -eq 0 -and $VersionOutput) {
+        $Version = ($VersionOutput | Select-Object -Last 1).Trim()
+    } else {
+        $Version = "1.8.0"  # fallback
+    }
+} catch {
+    $Version = "1.8.0"
+}
 $ReleaseDir = "IndusFuzz-v$Version-win64"
 $ZipName = "IndusFuzz-v$Version-win64.zip"
 $CacheDir = Join-Path $env:USERPROFILE ".indusfuzz"
@@ -221,3 +231,4 @@ Write-Host ""
 Read-Host "按回车退出"
 explorer $FuzzDir
 if ($script:HadError) { exit 1 }
+
