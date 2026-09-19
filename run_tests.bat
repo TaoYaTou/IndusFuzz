@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 
 echo ====================================
@@ -9,7 +9,7 @@ echo.
 cd /d "%~dp0"
 
 set "PYTHON_EXE=%~dp0agentscope_env\Scripts\python.exe"
-set "FUZZ_DIR=%~dp0fuzz_agent"
+set "PROJECT_ROOT=%~dp0"
 
 if not exist "%PYTHON_EXE%" (
     echo [ERROR] 未找到虚拟环境 Python: %PYTHON_EXE%
@@ -19,11 +19,10 @@ if not exist "%PYTHON_EXE%" (
 )
 
 echo [Python] %PYTHON_EXE%
-echo [项目]   %FUZZ_DIR%
-echo [报告]   %~dp0test\
+echo [项目]   %PROJECT_ROOT%
 echo.
 
-"%PYTHON_EXE%" "%FUZZ_DIR%\run_all_tests.py"
+"%PYTHON_EXE%" run_all_tests.py
 set "EXITCODE=%ERRORLEVEL%"
 
 echo.

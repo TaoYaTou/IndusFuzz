@@ -7,7 +7,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 
 $CacheDir = Join-Path $env:USERPROFILE ".indusfuzz"
 $CacheFile = Join-Path $CacheDir "config.json"
-$ReportsDir = Join-Path $PSScriptRoot "fuzz_agent\reports"
+$ReportsDir = Join-Path $PSScriptRoot "reports"
 
 Write-Host "============================================================"
 Write-Host "  IndusFuzz 清除 EXE 缓存"
@@ -94,3 +94,4 @@ try {
 
 Write-Host ""
 Read-Host "按回车退出"
+

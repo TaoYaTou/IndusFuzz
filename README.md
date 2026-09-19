@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-Currently English-8A2BE2" alt="English"></a>
   <a href="./README.zh.md"><img src="https://img.shields.io/badge/简体中文-Read in Chinese-blue" alt="简体中文"></a>
 </p>
@@ -20,7 +20,7 @@
 </pre>
 
 <p align="center">
-  <img src="fuzz_agent/assets/concept_a_hex/icon_512.png" alt="IndusFuzz Logo" width="128" height="128">
+  <img src="assets/concept_a_hex/icon_512.png" alt="IndusFuzz Logo" width="128" height="128">
 </p>
 
 ---
@@ -173,7 +173,7 @@ A virtual environment isolates dependencies so they do not affect your system Py
 ```bash
 # 1. Clone the repository
 git clone https://github.com/TaoYaTou/IndusFuzz.git
-cd IndusFuzz/fuzz_agent
+cd IndusFuzz
 
 # 2. Create and activate a virtual environment
 python -m venv agentscope_env
@@ -446,7 +446,7 @@ pip install pytest pytest-cov bandit flake8
 Run all tests:
 
 ```bash
-cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
+cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz
 pytest tests/ -v
 ```
 
@@ -525,7 +525,7 @@ The security baseline requires **zero HIGH-severity Bandit issues**; any HIGH pr
 ## 16. Project Structure
 
 ```
-fuzz_agent/
+IndusFuzz/
 ├── main.py                      # Entry: banner, environment check, wizard, start slave, fuzzing
 ├── requirements.txt             # Python dependencies
 ├── start_fuzz.bat               # One-click launch script
@@ -632,3 +632,4 @@ Because v1.8.0 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plan
 ## 19. License
 
 Licensed under the **Apache License 2.0**. See the `LICENSE` file for the full text.
+

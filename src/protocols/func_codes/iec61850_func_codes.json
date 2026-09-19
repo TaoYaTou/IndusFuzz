@@ -1,0 +1,23 @@
+{
+  "protocol": "iec61850",
+  "default_port": 102,
+  "func_codes": [
+    {"code": "0x81", "name": "MMS_INITIATE_REQUEST"},
+    {"code": "0x83", "name": "MMS_CONFIRMED_REQUEST"},
+    {"code": "0x86", "name": "MMS_UNCONFIRMED_REQUEST"},
+    {"code": "0xA8", "name": "MMS_CANCEL_REQUEST"},
+    {"code": "0xAB", "name": "MMS_CONCLUDE_REQUEST"},
+    {"code": "0xAC", "name": "MMS_CONFIRMED_SERVICE_REQUEST"},
+    {"code": "0xAF", "name": "MMS_UNCONFIRMED_SERVICE_REQUEST"},
+    {"code": "0xB0", "name": "MMS_READ_REQUEST"},
+    {"code": "0xB2", "name": "MMS_WRITE_REQUEST"},
+    {"code": "0xB5", "name": "MMS_GET_NAME_LIST_REQUEST"},
+    {"code": "0xB7", "name": "MMS_IDENTIFY_REQUEST"},
+    {"code": "0xB9", "name": "MMS_RENAME_REQUEST"},
+    {"code": "0xBC", "name": "MMS_STATUS_REQUEST"},
+    {"code": "0xBF", "name": "MMS_GET_FILE_REQUEST"},
+    {"code": "0xC1", "name": "MMS_SET_FILE_REQUEST"},
+    {"code": "0xC2", "name": "MMS_DELETE_FILE_REQUEST"},
+    {"code": "0xC5", "name": "MMS_GET_FILE_ATTRIBUTES_REQUEST"}
+  ]
+}

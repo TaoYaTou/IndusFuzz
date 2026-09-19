@@ -1,4 +1,4 @@
-# Contributing to IndusFuzz
+﻿# Contributing to IndusFuzz
 
 感谢你愿意为 IndusFuzz 做出贡献。本文档描述了贡献流程与项目约定。
 
@@ -18,7 +18,7 @@
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/TaoYaTou/IndusFuzz.git
-cd IndusFuzz/fuzz_agent
+cd IndusFuzz
 
 # 2. 创建并激活虚拟环境
 python -m venv agentscope_env
@@ -41,7 +41,7 @@ python main.py
 
 ```
 IndusFuzz/                 # 项目根（README、LICENSE、一键脚本）
-├── fuzz_agent/            # 工作目录（所有代码与文档）
+├── src/                   # 核心代码
 │   ├── src/
 │   │   ├── core/          # 核心模块（menu、fuzz_loop、report_generator 等）
 │   │   ├── protocols/     # 协议插件（registry + 各协议 client/mutator/llm_mutator）
@@ -61,7 +61,7 @@ IndusFuzz/                 # 项目根（README、LICENSE、一键脚本）
 ### 完整测试套件（pytest，147 用例）
 
 ```bash
-cd fuzz_agent
+cd IndusFuzz
 python -m pytest tests/ -v
 ```
 
@@ -76,7 +76,7 @@ python run_all_tests.py
 每个协议都有独立的 11 项自检，新增或修改协议后必须跑通：
 
 ```bash
-cd fuzz_agent
+cd IndusFuzz
 python tools/check_protocol.py modbus     # 替换为目标协议名
 python tools/check_protocol.py dnp3
 # 支持的协议名：modbus s7comm dnp3 iec104 iec61850 enip opcua
@@ -193,7 +193,7 @@ python -m src.core.slave_launcher --protocol modbus --port 5020 --strict
 
 新增协议是本项目最有价值的贡献类型。完整流程见：
 
-> **`docs/IndusFuzz 协议扩展 PRD.md`**（仓库根 `fuzz_agent/docs/` 目录）
+> **`docs/IndusFuzz 协议扩展 PRD.md`**（项目根 `docs/` 目录）
 
 该文档涵盖：
 
@@ -219,3 +219,5 @@ python -m src.core.slave_launcher --protocol modbus --port 5020 --strict
 ## 许可证
 
 提交代码即表示你同意项目以 Apache License 2.0 授权发布（见 `LICENSE`）。
+
+

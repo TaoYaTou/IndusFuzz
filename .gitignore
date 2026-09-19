@@ -14,13 +14,7 @@ env/
 .venv/
 ENV/
 
-# ===== 构建产物 =====
-build/
-dist/
-*.spec.bak
-
-# ===== 运行时产物 =====
-fuzz_agent/reports/
+# ===== 运行时产物（报告）=====
 reports/
 *.log
 *.pdf
@@ -34,14 +28,12 @@ config.json
 .env
 .env.*
 
-# ===== IDE / 编辑器 =====
+# ===== IDE / 编辑器 / 操作系统 =====
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# ===== 操作系统 =====
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -50,3 +42,10 @@ desktop.ini
 *.tmp
 *.bak
 *.old
+
+# ===== 测试基础设施（新增）=====
+.test_pkgs/
+.pytest_cache/
+.coverage
+coverage_html/
+htmlcov/

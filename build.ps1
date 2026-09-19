@@ -5,19 +5,21 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 # 路径配置
+# FLAT MIGRATION (v1.8.1): all project files live directly at $ProjectRoot.
+# Previously everything was under fuzz_agent/ — that subdir is now empty.
 $ProjectRoot = $PSScriptRoot
-$FuzzDir = Join-Path $ProjectRoot "fuzz_agent"
+$FuzzDir = $ProjectRoot
 $VenvPy = Join-Path $ProjectRoot "agentscope_env\Scripts\python.exe"
 # Dynamically read version from src/core/version.py (single source of truth)
 try {
-    $VersionOutput = & $VenvPy -c "import sys; sys.path.insert(0, r'$FuzzDir'); from src.core.version import get_version; print(get_version())" 2>&1
+    $VersionOutput = & $VenvPy -c "import sys; sys.path.insert(0, r'$ProjectRoot'); from src.core.version import get_version; print(get_version())" 2>&1
     if ($LASTEXITCODE -eq 0 -and $VersionOutput) {
         $Version = ($VersionOutput | Select-Object -Last 1).Trim()
     } else {
-        $Version = "1.8.0"  # fallback
+        $Version = "1.8.1"  # fallback
     }
 } catch {
-    $Version = "1.8.0"
+    $Version = "1.8.1"
 }
 $ReleaseDir = "IndusFuzz-v$Version-win64"
 $ZipName = "IndusFuzz-v$Version-win64.zip"
@@ -130,7 +132,7 @@ try {
     $releasePath = Join-Path $ProjectRoot $ReleaseDir
     New-Item $releasePath -ItemType Directory -Force | Out-Null
     Copy-Item $exePath $releasePath -Force
-    # README 在项目根目录，其余文档在 fuzz_agent 目录
+    # All docs are now at project root (flat migration v1.8.1)
     foreach ($f in @("README.md","README.zh.md")) {
         $src = Join-Path $ProjectRoot $f
         if (Test-Path $src) { Copy-Item $src $releasePath -Force }
@@ -231,4 +233,7 @@ Write-Host ""
 Read-Host "按回车退出"
 explorer $FuzzDir
 if ($script:HadError) { exit 1 }
+
+
+
 

@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-Read in English-8A2BE2" alt="English"></a>
   <a href="./README.zh.md"><img src="https://img.shields.io/badge/简体中文-当前为中文版-blue" alt="简体中文"></a>
 </p>
@@ -20,7 +20,7 @@
 </pre>
 
 <p align="center">
-  <img src="fuzz_agent/assets/concept_a_hex/icon_512.png" alt="IndusFuzz Logo" width="128" height="128">
+  <img src="assets/concept_a_hex/icon_512.png" alt="IndusFuzz Logo" width="128" height="128">
 </p>
 
 ***
@@ -192,7 +192,7 @@ Ollama 默认在 CPU 上运行；使用本地 Ollama 时向导会询问是否启
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/TaoYaTou/IndusFuzz.git
-cd IndusFuzz/fuzz_agent
+cd IndusFuzz
 
 # 2. 创建并激活虚拟环境
 python -m venv agentscope_env
@@ -491,7 +491,7 @@ pip install pytest pytest-cov bandit flake8
 运行全部测试：
 
 ```bash
-cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
+cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz
 pytest tests/ -v
 ```
 
@@ -570,7 +570,7 @@ flake8 src/ tests/
 ## 16. 项目结构
 
 ```
-fuzz_agent/
+IndusFuzz/
 ├── main.py                      # 入口：横幅、环境检查、向导、启动从站、模糊测试
 ├── requirements.txt             # Python 依赖
 ├── start_fuzz.bat               # 一键启动脚本
@@ -683,3 +683,5 @@ v1.8.0 官方只支持 Windows 10/11。macOS/Linux 理论可行，但未经过�
 ## 19. 开源协议
 
 本项目采用 **Apache License 2.0** 开源。完整条款见 `LICENSE` 文件。
+
+
