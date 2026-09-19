@@ -8,35 +8,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.8.1] - 2026-09-20
 
-### Added
+### Added / 新增
+
 - pytest test suite: 147 cases across registry / mutator / reporter / security modules
+  — pytest 测试套件：registry / mutator / reporter / security 四大模块共 147 个用例
 - run_all_tests.py 6-stage test orchestrator with Chinese HTML report generation
+  — run_all_tests.py 六阶段测试编排器，生成中文 HTML 报告
 - CI workflow test.yml — push/PR trigger: pytest + coverage fail-under=16% + flake8 + black --check + bandit
+  — CI workflow test.yml：push/PR 触发，跑 pytest + 覆盖率下限 16% + flake8 + black --check + bandit
 - CI workflow release.yml — tag v* trigger: test → PyInstaller → portable ZIP → GitHub Release with CHANGELOG notes + auto prerelease detection
+  — CI workflow release.yml：tag v* 触发，测试 → PyInstaller → 便携 ZIP → 自动发布 GitHub Release（读 CHANGELOG 说明 + 自动预发布检测）
 - .pre-commit-config.yaml — black / flake8 / bandit hooks (black scoped to tests/ tools/ due to no prior black history)
+  — .pre-commit-config.yaml：black / flake8 / bandit 三个钩子（black 范围限定 tests/ tools/，因 src/ 无历史 black 记录）
 - src/core/version.py three-source version resolution: INDUSFUZZ_VERSION env → git describe --tags → HARDCODED_VERSION fallback
+  — src/core/version.py 三来源版本解析：INDUSFUZZ_VERSION 环境变量 → git describe --tags → HARDCODED_VERSION 兜底
 - tools/verify/ and tools/legacy/ — verification helpers relocated out of tests/
+  — tools/verify/ 与 tools/legacy/：验证辅助脚本从 tests/ 迁出
 
-### Changed
+### Changed / 变更
+
 - build.ps1 / make_release.bat / start_fuzz.bat all read version dynamically from version.py (single source of truth)
+  — build.ps1 / make_release.bat / start_fuzz.bat 均从 version.py 动态读取版本（单一来源）
 - CI flake8 args fully aligned with pre-commit: --max-line-length=120 --ignore=E501,W503 --select=E9,F63,F7,F82,E231,F401,W292
+  — CI 的 flake8 参数与 pre-commit 完全对齐：--max-line-length=120 --ignore=E501,W503 --select=E9,F63,F7,F82,E231,F401,W292
 - black scope limited to tests/ tools/ (src/ has no prior black history; will be reformatted in a dedicated PR)
+  — black 范围限定 tests/ tools/（src/ 无历史 black 记录，将在独立 PR 中统一格式化）
+- README.md / README.zh.md — add "Testing" section (env setup / run tests / coverage ≥60% / bandit+flake8 / suite overview / contributor notes); EXE output path & roadmap bumped to v1.8.1
+  — README.md / README.zh.md：新增「测试」章节（环境 / 运行测试 / 覆盖率 ≥60% / bandit+flake8 / 测试体系表 / 贡献者须知）；EXE 产物路径与路线图对齐 v1.8.1
+- CONTRIBUTING.md — add pytest 147-case suite, run_all_tests.py 6-stage orchestrator, and pre-commit hooks; bump build artifact dir to v1.8.1-win64
+  — CONTRIBUTING.md：新增 pytest 147 用例、run_all_tests.py 6 阶段编排器、pre-commit 钩子说明；构建产物目录对齐 v1.8.1-win64
 
-### Fixed
+### Fixed / 修复
+
 - start_fuzz.bat banner hardcoded v1.5.0 (3 releases behind) → dynamic
+  — start_fuzz.bat 横幅硬编码 v1.5.0（落后 3 个版本）→ 改为动态读取
 - release.yml prerelease regex \b boundary bug (v1.9.0-rc3 not detected) → removed \b
+  — release.yml 预发布正则 \b 边界 bug（无法识别 v1.9.0-rc3）→ 移除 \b
 - CI missing pytest-timeout → added to install step
+  — CI 缺少 pytest-timeout → 已加入安装步骤
 - CI missing black + black --check → added
+  — CI 缺少 black 及 black --check → 已补充
 - CI missing --cov-fail-under → added with threshold 16%
+  — CI 缺少 --cov-fail-under → 已补充，阈值 16%
 
-### Removed
+### Removed / 移除
+
 - IndusFuzz/test/ build artifacts (bandit_report.json + pytest_coverage* HTML)
+  — 删除 IndusFuzz/test/ 构建产物（bandit_report.json + pytest_coverage* HTML）
 
-### Verified
+### Verified / 已验证
+
 - check_protocol.py all 7 built-in protocols PASS (modbus / s7comm / dnp3 / iec104 / iec61850 / enip / opcua)
-- pytest 147 passed / 0 failed
-- bandit -r src -lll → No issues identified
-- flake8 CI params → 0 errors
+  — check_protocol.py 内置 7 协议全部 PASS
+- pytest 147 passed / 0 failed — pytest 147 通过 / 0 失败
+- bandit -r src -lll → No issues identified — bandit -r src -lll 无发现问题
+- flake8 CI params → 0 errors — flake8 CI 参数 0 报错
 
 
 ## [1.8.0] - 2026-09-19

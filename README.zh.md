@@ -495,6 +495,12 @@ cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
 pytest tests/ -v
 ```
 
+或一键运行完整 6 阶段编排器（生成中文 HTML 报告）：
+
+```bash
+python run_all_tests.py
+```
+
 运行单个测试文件：
 
 ```bash

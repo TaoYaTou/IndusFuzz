@@ -450,6 +450,12 @@ cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent
 pytest tests/ -v
 ```
 
+Or run the full 6-stage orchestrator (produces a Chinese HTML report):
+
+```bash
+python run_all_tests.py
+```
+
 Run a single test file:
 
 ```bash
