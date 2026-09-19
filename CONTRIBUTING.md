@@ -53,10 +53,23 @@ IndusFuzz/                 # 项目根（README、LICENSE、一键脚本）
 │   ├── docs/              # PRD 文档
 │   └── main.py            # 入口
 ├── agentscope_env/        # 开发用虚拟环境（不打包）
-└── IndusFuzz-v1.8.0-win64/  # 发布产物（不提交）
+└── IndusFuzz-v1.8.1-win64/  # 发布产物（不提交）
 ```
 
 ## 测试运行
+
+### 完整测试套件（pytest，147 用例）
+
+```bash
+cd fuzz_agent
+python -m pytest tests/ -v
+```
+
+一键 6 阶段编排（含中文 HTML 报告）：
+
+```bash
+python run_all_tests.py
+```
 
 ### 协议自检
 
@@ -77,6 +90,15 @@ bandit -r src/protocols/<your-protocol>/ server/<your-protocol>_server.py -lll
 ```
 
 安全基线：**Bandit 零 HIGH**。
+
+### pre-commit 钩子（可选）
+
+安装后提交时自动跑 black / flake8 / bandit：
+
+```bash
+pip install pre-commit
+pre-commit install
+```
 
 ### 模拟从站启动验证
 

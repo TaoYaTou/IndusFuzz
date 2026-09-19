@@ -101,7 +101,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
-| v1.8.0 | Release packaging (EXE build/release toolchain) | Done (current) |
+| v1.8.1 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done (current) |
 | v2.0.0 | Cross-platform (macOS/Linux), desktop app, NVD/CNVD comparison | Future |
 
 ---
@@ -190,7 +190,7 @@ python main.py
 
 ### EXE installation (recommended for end users)
 
-**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.0-win64\IndusFuzz.exe`).
+**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.1-win64\IndusFuzz.exe`).
 
 ### Verify the installation
 

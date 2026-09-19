@@ -53,9 +53,12 @@ def get_version():
         return env
     git_ver = _from_git()
     if git_ver:
+        # Strip -dirty suffix — production build should not leak working-copy state
+        git_ver = git_ver.split("-dirty")[0]
         return git_ver
     return HARDCODED_VERSION
 
 
 __version__ = get_version()
+
 
