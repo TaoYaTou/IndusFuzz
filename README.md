@@ -27,29 +27,29 @@
 
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-2. [Background & Design](#2-background--design)
-3. [Roadmap](#3-roadmap)
-4. [Environment Requirements](#4-environment-requirements)
-5. [System Compatibility](#5-system-compatibility)
-6. [Installation](#6-installation)
-7. [Dependencies](#7-dependencies)
-8. [Model Configuration](#8-model-configuration)
-9. [Supported Models](#9-supported-models)
-10. [Quick Start](#10-quick-start)
-11. [Supported Protocols](#11-supported-protocols)
-12. [Known Limitations](#12-known-limitations)
-13. [Usage Scenarios](#13-usage-scenarios)
-14. [Real Device Testing Guide](#14-real-device-testing-guide)
+2. [Introduction](#2-introduction)
+3. [Background & Design](#3-background-design)
+4. [Roadmap](#4-roadmap)
+5. [Environment Requirements](#5-environment-requirements)
+6. [System Compatibility](#6-system-compatibility)
+7. [Installation](#7-installation)
+8. [Supported Protocols](#8-supported-protocols)
+9. [Quick Start](#9-quick-start)
+10. [Usage Scenarios](#10-usage-scenarios)
+11. [Real Device Testing Guide](#11-real-device-testing-guide)
+12. [Model Configuration](#12-model-configuration)
+13. [Supported Models](#13-supported-models)
+14. [Dependencies](#14-dependencies)
 15. [Reports](#15-reports)
-16. [Project Structure](#16-project-structure)
-17. [FAQ](#17-faq)
-18. [Disclaimer](#18-disclaimer)
-19. [License](#19-license)
+16. [Known Limitations](#16-known-limitations)
+17. [Project Structure](#17-project-structure)
+18. [FAQ](#18-faq)
+19. [Disclaimer](#19-disclaimer)
+20. [License](#20-license)
 
 ---
 
-## 1. Introduction
+## 2. Introduction
 
 **IndusFuzz** is an industrial protocol fuzzing agent. It drives protocol-level fuzzing with a local LLM and automatically falls back to local deterministic random mutation when the LLM is unavailable.
 
@@ -63,7 +63,7 @@ Supported protocols: **Modbus TCP, S7Comm, DNP3, IEC 60870-5-104, IEC 61850 MMS,
 
 ---
 
-## 2. Background & Design
+## 3. Background & Design
 
 ### 2.1 Why fuzz industrial protocols
 
@@ -97,7 +97,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 ---
 
-## 3. Roadmap
+## 4. Roadmap
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
@@ -106,7 +106,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 ---
 
-## 4. Environment Requirements
+## 5. Environment Requirements
 
 | Item | Requirement |
 |------|-------------|
@@ -119,7 +119,7 @@ No GPU is required. Ollama runs on CPU by default; when using local Ollama, the 
 
 ---
 
-## 5. System Compatibility
+## 6. System Compatibility
 
 | Feature | Windows 10/11 | macOS | Linux |
 |---------|--------------|-------|-------|
@@ -138,7 +138,7 @@ No GPU is required. Ollama runs on CPU by default; when using local Ollama, the 
 
 ---
 
-## 6. Installation
+## 7. Installation
 
 ### Source installation (recommended for developers)
 
@@ -202,96 +202,7 @@ The IndusFuzz banner and interactive wizard appearing means success. Press `q` t
 
 ---
 
-## 7. Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| openai | 3.13.0 | LLM API calls |
-| scapy | 2.7.0 | Packet construction / capture |
-| pywin32 | 311 | Windows DPAPI encryption |
-| pymodbus | 3.15.0 | Modbus protocol |
-| reportlab | 5.0.1 | PDF generation |
-| asyncua | 2.0.1 | OPC UA protocol |
-| python-snap7 | 3.1.2 | S7Comm protocol |
-| xhtml2pdf | 0.2.19 | HTML to PDF |
-
----
-
-## 8. Model Configuration
-
-Only one model source is configured per run (applies globally to all protocols). There are 4 options:
-
-| Option | Use case |
-|--------|----------|
-| Local Ollama | Recommended. Free and private, model runs locally. GPU can be enabled. |
-| Cloud API | DeepSeek / OpenAI / custom cloud. Requires an API key. |
-| Custom local model | OpenAI-compatible endpoint of vLLM / LM Studio / LocalAI on LAN. |
-| No LLM | Local mutation only. Fully offline, no model needed. |
-
-### Option 1: Local Ollama (recommended)
-
-1. Install and run Ollama.
-2. Pull a model, for example:
-   ```bash
-   ollama pull qwen2.5-coder:14b
-   ollama serve
-   ```
-3. In the wizard choose **Local Ollama**; downloaded models are listed automatically.
-4. GPU: when using Ollama, the wizard asks whether to enable GPU acceleration and enables it automatically if a compatible GPU is detected.
-
-### Option 2: Cloud API (DeepSeek / OpenAI)
-
-1. Obtain an API key from your provider.
-2. In the wizard choose **Cloud API**, pick a preset (DeepSeek / OpenAI) or a custom endpoint.
-3. Enter the API key and Base URL.
-4. The API key is stored locally after encryption using Windows DPAPI.
-**Cloud API requests are sent to a third party; do not use it in privacy-sensitive environments.**
-### Option 3: Custom local model (vLLM / LM Studio / LocalAI)
-
-1. Requires a local service exposing an OpenAI-compatible REST API.
-2. In the wizard choose **Custom local model**.
-3. Enter the Base URL of the local service, e.g. `http://localhost:1234/v1`.
-
-### Option 4: No LLM
-
-Choose **No LLM** to use local deterministic random mutation directly. No API key or model needed, fully offline.
-
----
-
-## 9. Supported Models
-
-### Models supported by local Ollama (recommended)
-
-- `qwen2.5-coder:14b` (recommended)
-- `qwen2.5-coder:7b` (lightweight)
-- `deepseek-coder:6.7b`
-- `llama3.1:8b`
-- Any other official Ollama model
-
-### Cloud API providers
-
-- DeepSeek (`deepseek-chat`, `deepseek-coder`)
-- OpenAI (`gpt-4o`, `gpt-4o-mini`)
-- Other OpenAI-compatible endpoints (custom Base URL required)
-
-### Frameworks supported as custom local models
-
-- vLLM
-- LM Studio
-- LocalAI
-- Other OpenAI-compatible services
-
----
-
-## 10. Quick Start
-
-1. **Start**: `python main.py` or `start_fuzz.bat` or `IndusFuzz.exe`
-2. **Follow the wizard**: choose model source, scenario, protocols, function codes, targets, timeout.
-3. **After the run**, open the reports in the `reports/` directory.
-
----
-
-## 11. Supported Protocols
+## 8. Supported Protocols
 
 | Protocol | Default Port | Typical Devices | Built-in Mock Slave | Simulator Tested |
 |----------|--------------|-----------------|---------------------|------------------|
@@ -317,19 +228,15 @@ Typical use cases:
 
 ---
 
-## 12. Known Limitations
+## 9. Quick Start
 
-| ID | Protocol | Note |
-|----|----------|------|
-| P2-006 | OPC UA | The OPC UA implementation uses a **custom frame format** and may not be compatible with standard servers. |
-| P2-011 | S7Comm | The S7Comm mock slave uses a **custom frame format** (non-standard port). |
-| P2-016 | All (6 servers) | Servers assume a single `recv` returns a complete frame; TCP fragmentation/coalescing is not handled. |
-| P2-017 | MCP integration | The 3 MCP integrations (`codeinspectus_mcp`, `codeguard_mcp`, `vulnclaw_mcp`) are still stubs, under development. |
-| R5-7 | Error report | `_summarize_suggestions` and `generate_error_report` are currently only called by test scripts; main-flow integration is pending v1.8.3. |
+1. **Start**: `python main.py` or `start_fuzz.bat` or `IndusFuzz.exe`
+2. **Follow the wizard**: choose model source, scenario, protocols, function codes, targets, timeout.
+3. **After the run**, open the reports in the `reports/` directory.
 
 ---
 
-## 13. Usage Scenarios
+## 10. Usage Scenarios
 
 ### Scenario 1: Local self-test
 
@@ -347,7 +254,7 @@ Typical use cases:
 
 ---
 
-## 14. Real Device Testing Guide
+## 11. Real Device Testing Guide
 
 ### 14.1 Prerequisites
 
@@ -413,6 +320,87 @@ Before running fuzzing against real industrial devices, ALL of the following mus
 
 ---
 
+## 12. Model Configuration
+
+Only one model source is configured per run (applies globally to all protocols). There are 4 options:
+
+| Option | Use case |
+|--------|----------|
+| Local Ollama | Recommended. Free and private, model runs locally. GPU can be enabled. |
+| Cloud API | DeepSeek / OpenAI / custom cloud. Requires an API key. |
+| Custom local model | OpenAI-compatible endpoint of vLLM / LM Studio / LocalAI on LAN. |
+| No LLM | Local mutation only. Fully offline, no model needed. |
+
+### Option 1: Local Ollama (recommended)
+
+1. Install and run Ollama.
+2. Pull a model, for example:
+   ```bash
+   ollama pull qwen2.5-coder:14b
+   ollama serve
+   ```
+3. In the wizard choose **Local Ollama**; downloaded models are listed automatically.
+4. GPU: when using Ollama, the wizard asks whether to enable GPU acceleration and enables it automatically if a compatible GPU is detected.
+
+### Option 2: Cloud API (DeepSeek / OpenAI)
+
+1. Obtain an API key from your provider.
+2. In the wizard choose **Cloud API**, pick a preset (DeepSeek / OpenAI) or a custom endpoint.
+3. Enter the API key and Base URL.
+4. The API key is stored locally after encryption using Windows DPAPI.
+**Cloud API requests are sent to a third party; do not use it in privacy-sensitive environments.**
+### Option 3: Custom local model (vLLM / LM Studio / LocalAI)
+
+1. Requires a local service exposing an OpenAI-compatible REST API.
+2. In the wizard choose **Custom local model**.
+3. Enter the Base URL of the local service, e.g. `http://localhost:1234/v1`.
+
+### Option 4: No LLM
+
+Choose **No LLM** to use local deterministic random mutation directly. No API key or model needed, fully offline.
+
+---
+
+## 13. Supported Models
+
+### Models supported by local Ollama (recommended)
+
+- `qwen2.5-coder:14b` (recommended)
+- `qwen2.5-coder:7b` (lightweight)
+- `deepseek-coder:6.7b`
+- `llama3.1:8b`
+- Any other official Ollama model
+
+### Cloud API providers
+
+- DeepSeek (`deepseek-chat`, `deepseek-coder`)
+- OpenAI (`gpt-4o`, `gpt-4o-mini`)
+- Other OpenAI-compatible endpoints (custom Base URL required)
+
+### Frameworks supported as custom local models
+
+- vLLM
+- LM Studio
+- LocalAI
+- Other OpenAI-compatible services
+
+---
+
+## 14. Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| openai | 3.13.0 | LLM API calls |
+| scapy | 2.7.0 | Packet construction / capture |
+| pywin32 | 311 | Windows DPAPI encryption |
+| pymodbus | 3.15.0 | Modbus protocol |
+| reportlab | 5.0.1 | PDF generation |
+| asyncua | 2.0.1 | OPC UA protocol |
+| python-snap7 | 3.1.2 | S7Comm protocol |
+| xhtml2pdf | 0.2.19 | HTML to PDF |
+
+---
+
 ## 15. Reports
 
 Reports are saved in the `reports/` directory:
@@ -427,102 +415,19 @@ Reports contain: statistical summary, risk grading, anomaly distribution, functi
 
 ---
 
-## Testing
+## 16. Known Limitations
 
-This project uses pytest as its testing framework, covering the four core areas: protocol registration, mutation logic, report generation, and the security module.
-
-### Environment setup
-
-Install test dependencies:
-
-```bash
-pip install pytest pytest-cov bandit flake8
-```
-
-> Test dependencies are only needed during development; running IndusFuzz itself does not require them (see "Dependencies" for runtime requirements).
-
-### Running tests
-
-Run all tests:
-
-```bash
-cd /d/Application/AllToolsSet/AgnetPrograms/IndusFuzz
-pytest tests/ -v
-```
-
-Or run the full 6-stage orchestrator (produces a Chinese HTML report):
-
-```bash
-python run_all_tests.py
-```
-
-Run a single test file:
-
-```bash
-pytest tests/test_registry.py -v
-pytest tests/test_mutator.py -v
-pytest tests/test_reporter.py -v
-pytest tests/test_security.py -v
-```
-
-Run a single test function:
-
-```bash
-pytest tests/test_security.py -k "test_encrypt" -v
-```
-
-Show detailed output (including per-test duration and temp dirs):
-
-```bash
-pytest tests/ -v --tb=short
-```
-
-### Test coverage
-
-Generate the coverage report:
-
-```bash
-pytest --cov=src tests/
-```
-
-The produced HTML coverage report is written to the `htmlcov/` directory by default. Open `htmlcov/index.html` in a browser to see per-module coverage.
-
-The current coverage target is **≥ 60%**; anything below this threshold is considered a failure, and new/modified code must not lower coverage.
-
-### Code quality checks
-
-Bandit security scan:
-
-```bash
-bandit -r src -lll
-```
-
-flake8 style check:
-
-```bash
-flake8 src/ tests/
-```
-
-The security baseline requires **zero HIGH-severity Bandit issues**; any HIGH present blocks the change from being merged into the main branch.
-
-### Test suite overview
-
-| Test file          | Module covered                    | Main test content                          |
-| ------------------ | --------------------------------- | ------------------------------------------ |
-| test_registry.py   | src/protocols/registry.py         | Protocol registration, lookup, list        |
-| test_mutator.py    | src/protocols/*/mutator.py        | Mutation logic and edge cases for 7 protocols |
-| test_reporter.py   | src/core/report_generator.py      | Report generation, bilingual switch, PDF   |
-| test_security.py   | src/core/security.py              | API key encryption, HTTPS check, masking   |
-
-### Contributor notes
-
-- **Before submitting a PR, you must**: run `python tools/check_protocol.py <protocol>` (11/11) for affected protocols and ensure `pytest tests/` passes fully.
-- **New features require tests**: any new or modified module must ship matching pytest cases, otherwise the PR is rejected.
-- **Coverage must not drop**: your change must not push overall coverage below 60%, nor reduce existing covered lines.
+| ID | Protocol | Note |
+|----|----------|------|
+| P2-006 | OPC UA | The OPC UA implementation uses a **custom frame format** and may not be compatible with standard servers. |
+| P2-011 | S7Comm | The S7Comm mock slave uses a **custom frame format** (non-standard port). |
+| P2-016 | All (6 servers) | Servers assume a single `recv` returns a complete frame; TCP fragmentation/coalescing is not handled. |
+| P2-017 | MCP integration | The 3 MCP integrations (`codeinspectus_mcp`, `codeguard_mcp`, `vulnclaw_mcp`) are still stubs, under development. |
+| R5-7 | Error report | `_summarize_suggestions` and `generate_error_report` are currently only called by test scripts; main-flow integration is pending v1.8.3. |
 
 ---
 
-## 16. Project Structure
+## 17. Project Structure
 
 ```
 IndusFuzz/
@@ -567,7 +472,7 @@ IndusFuzz/
 
 ---
 
-## 17. FAQ
+## 18. FAQ
 
 **The server connection failed, what should I do?**
 Check whether the target `IP:port` is reachable, whether the port is occupied (e.g. `netstat -ano | findstr port`), and whether the environment and dependencies are installed. The wizard shows troubleshooting hints on failure.
@@ -599,7 +504,7 @@ Because v1.8.3 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plan
 
 ---
 
-## 18. Disclaimer
+## 19. Disclaimer
 
 - This tool is for **authorized security testing only**.
 - **Do not** run it on unauthorized production devices.
@@ -608,7 +513,7 @@ Because v1.8.3 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plan
 
 ---
 
-## 19. License
+## 20. License
 
 Licensed under the **Apache License 2.0**. See the `LICENSE` file for the full text.
 
