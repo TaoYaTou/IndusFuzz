@@ -84,7 +84,7 @@ tests/test_*.py 相关扩展           ← 不能只有 assert True
 ```
 字段不全或 func_codes 空数组 = L20 违规。
 
-### P1-3 开发执行依据 + MD 文件同步（**强制，防 L11/L15/L16**）
+### P1-3 开发执行依据 + MD 文件同步（**强制，防 L11/L15/L16 + 新增 P1-3a 目录同步**）
 
 **先读 PRD 再动手**：新增协议必须按 `docs/IndusFuzz 协议扩展 PRD.md` 的章节模板逐条执行（文件结构 / 基类签名 / func_codes JSON / server 状态机 / client 握手校验）。
 PRD 本身也是**活文档**，每次跑完流程后必须同步更新。
@@ -98,11 +98,23 @@ PRD 本身也是**活文档**，每次跑完流程后必须同步更新。
 | **3 (执行依据)** | **docs/IndusFuzz 审计修复总结PRD.md** | 本轮审计修复 | 追加修复案例（问题 → 根因 → 修复 → 验证） |
 | **4 (规则)** | **RULES_RELEASE.md** | 踩到新坑 | 教训表追加 L{n} + 错误案例表追加 |
 | **5 (项目记录)** | **CHANGELOG.md** | 每次有功能/bugfix | 新增版本条目 |
-| **6 (用户可见)** | **README.md / README.zh.md** | 新增协议或重大功能 | 更新协议列表、快速开始 |
+| **6 (用户可见)** | **README.md / README.zh.md** | 每次代码更新（含小更新，不限发布） | **项目结构目录树必须同步**（见 P1-3a） |
 
 **禁止**：Agent 宣称"已同步 MD 文件"但未实际读取/写入文件（L15 教训）。
 **禁止**：直接覆写 config/rules 文件而不做结构化合并或备份（L16 教训）。
 **禁止**：不读 PRD 就新增协议（会重复踩 L17/L18/L20 的坑）。
+
+#### P1-3a README 项目目录树强制同步（**每次代码变更后立即执行**）
+`README.md` 的 `## 16. Project Structure` 和 `README.zh.md` 的 `## 16. 项目结构` 包含完整目录树。
+**任何代码变更**（新增文件 / 删除文件 / 重命名 / 移动位置 / 修改文件注释功能）后，**必须同步更新两个 README 的目录树**。
+不发布包不代表可以跳过——目录树是用户和开发者理解项目结构的唯一权威来源。
+
+**验证命令**（写一个小脚本比对 README 目录树 vs 实际磁盘）：
+```python
+# tools/verify_readme_structure.py 应在 P2-1 阶段被调用
+python tools/verify_readme_structure.py
+# 输出: README vs 磁盘差异清单（缺文件 / 多文件 / 注释过时）
+```
 
 ### P1-4 开发自检命令（必须跑）
 ```bash
@@ -134,9 +146,18 @@ python -m pytest tests/ -q --tb=short
 3. **新增协议 client.connect() 握手校验**（防 L4/L13）：
    用假 TCP server（只回 SYN/ACK，不回协议帧）验证 client.connect() **正确返回 False**
 
-### P2-2 audit_prd.py 本身的完整性（防 L11）
-`audit_prd.py` 必须覆盖 12+3+5=20 维度（PRD 5.15 目录规范 12 + 5.14 pytest 质量 5 + 5.12 安全基线 3）。
+### P2-2 audit_prd.py 本身的完整性 + 审计必须全量（**强制，防 L11/L10**）
+**审计必须完整跑一次 `python audit_prd.py`，不能挑选章节或维度**（防 L11/L10）：
+- ❌ 禁止 `python audit_prd.py --dim 5.15` 只跑目录规范
+- ❌ 禁止 `python audit_prd.py -k "pytest"` 只跑 pytest
+- ❌ 禁止 Agent 跳过某些维度口头宣称"没问题"
+- ✅ 正确：`python audit_prd.py`（无参数）→ 完整 20 维度 → `audit_result.json`
+
+`audit_prd.py` 必须覆盖 20 维度（PRD 5.15 目录规范 12 + 5.14 pytest 质量 5 + 5.12 安全基线 3）。
 **发现脚本有盲区** → 立即补充维度（防 L11）。
+**发现 Agent 想挑章节跑** → 判定为 P2-2 违规，必须重跑全量。
+
+**补充 P2-2a README 目录树验证**：如果 `tools/verify_readme_structure.py` 已实现，P2-2 阶段必须同时跑它，确认 README.md / README.zh.md 目录树与实际磁盘一致（防 P1-3a 规则被跳过）。
 
 ### P2-3 审计输出可追溯（防 L15）
 `audit_result.json` 是放行凭证，必须包含每项检查的 `status: pass/fail` 和 `evidence` 字段。
