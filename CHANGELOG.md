@@ -32,12 +32,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 解压到任意目录
 - 双击 `IndusFuzz.exe`
 
-**方式二：从源码运行**
+**方式二：从源码运行（开发调试用）**
+
+前置要求：Python 3.12+、Git、Windows 系统（项目使用 pywin32 / Windows DPAPI）
 
 ```
+# 1. 克隆仓库
 git clone https://github.com/TaoYaTou/IndusFuzz.git
 cd IndusFuzz
+
+# 2. 创建并激活虚拟环境（推荐）
+python -m venv venv
+venv\Scripts\activate          # PowerShell / CMD
+# source venv/bin/activate     # Git Bash
+
+# 3. 安装依赖
+pip install --upgrade pip
 pip install -r requirements.txt
+pip install -r requirements-test.txt   # 可选：开发测试
+
+# 4. 启动
 python main.py
 ```
 
