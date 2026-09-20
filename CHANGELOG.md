@@ -26,7 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 安装
 
-暂无更新
+**方式一：下载 EXE（推荐）**
+
+- 下载 `IndusFuzz-v1.8.3-win64.zip`
+- 解压到任意目录
+- 双击 `IndusFuzz.exe`
+
+**方式二：从源码运行**
+
+```
+git clone https://github.com/TaoYaTou/IndusFuzz.git
+cd IndusFuzz
+pip install -r requirements.txt
+python main.py
+```
 
 ## [1.8.2] - 2026-09-20
 
