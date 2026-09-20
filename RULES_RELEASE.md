@@ -25,6 +25,7 @@
 | **L19** | **spec hiddenimports 漏新模块** — PyInstaller 运行时 ImportError | 本会话 2026-09-20 | P3-2 |
 | **L20** | **func_codes JSON 漏新协议** — audit 5.15 dim5 发现 JSON 字段不全 | 本会话 2026-09-20 | P1-2 |
 | **L21** | **组装/文档时凭空写文件名不核实磁盘** — P3-3 凭空写 config/protocols.json（实际只有 connect_templates.yaml），违反 P1-3c | 本会话 2026-09-21 | P1-3c/P3-3 |
+| **L22** | **daemon 线程在 socket recv 阻塞，报告生成后还输出** — stop_event.set() 后 recv 还在等 timeout，主循环已 continue 到报告生成；必须额外 shutdown+close socket 强制打断 recv | 本会话 2026-09-21 | fuzz_loop_llm.py |
 
 ---
 
