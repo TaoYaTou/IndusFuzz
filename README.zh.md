@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-Read in English-8A2BE2" alt="English"></a>
   <a href="./README.zh.md"><img src="https://img.shields.io/badge/简体中文-当前为中文版-blue" alt="简体中文"></a>
 </p>
@@ -111,7 +111,7 @@ PRD 早期设想为「多智能体协作（种子生成 / 测试用例生成 / �
 
 | 版本     | 主要变更                                                      | 状态      |
 | ------ | --------------------------------------------------------- | ------- |
-| v1.8.3 | 测试体系 + CI/CD（147 项 pytest、Windows runner、pre-commit）、版本 fallback 一致性修复、扁平目录迁移、black 24.10.0 格式化、mcp 依赖、CHANGELOG Release 自动提取 | 当前      |
+| v1.8.4 | 超时竞态修复、细粒度影响描述、报告显示 LLM 模型信息 | 当前      |（147 项 pytest、Windows runner、pre-commit）、版本 fallback 一致性修复、扁平目录迁移、black 24.10.0 格式化、mcp 依赖、CHANGELOG Release 自动提取 | 当前      |
 | v2.0.0 | 跨平台支持（macOS/Linux）、桌面端、NVD/CNVD 比对                        | 远期      |
 
 ***
@@ -209,7 +209,7 @@ python main.py
 
 ### EXE 安装（推荐普通用户）
 
-**可从 Releases 获取。** 从 GitHub [Releases](../../releases) 页面下载 `IndusFuzz.exe`；也可用打包工具链本地构建（产物见 `IndusFuzz-v1.8.3-win64\IndusFuzz.exe`）。
+**可从 Releases 获取。** 从 GitHub [Releases](../../releases) 页面下载 `IndusFuzz.exe`；也可用打包工具链本地构建（产物见 `IndusFuzz-v1.8.4-win64\IndusFuzz.exe`）。
 
 ### 验证安装是否成功
 

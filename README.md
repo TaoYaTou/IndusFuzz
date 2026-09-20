@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-Currently English-8A2BE2" alt="English"></a>
   <a href="./README.zh.md"><img src="https://img.shields.io/badge/简体中文-Read in Chinese-blue" alt="简体中文"></a>
 </p>
@@ -101,7 +101,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
-| v1.8.3 | Test suite + CI/CD (147 pytest cases, Windows runner, pre-commit), version fallback consistency fix, flat directory migration, black 24.10.0 formatting, mcp dependency, auto CHANGELOG Release body | Current |
+| v1.8.4 | Timeout race fix, granular impact descriptions, LLM model info in report | Current | (147 pytest cases, Windows runner, pre-commit), version fallback consistency fix, flat directory migration, black 24.10.0 formatting, mcp dependency, auto CHANGELOG Release body | Current |
 | v2.0.0 | Cross-platform (macOS/Linux), desktop app, NVD/CNVD comparison | Future |
 
 ---
@@ -190,7 +190,7 @@ python main.py
 
 ### EXE installation (recommended for end users)
 
-**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.3-win64\IndusFuzz.exe`).
+**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.4-win64\IndusFuzz.exe`).
 
 ### Verify the installation
 

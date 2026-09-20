@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.8.4] - 2026-09-20
+
+### 本版本更新
+- 修复了一些BUG
+
+### Bug Fixes / 修复
+
+- **超时竞态条件**：全局超时触发后后台任务仍在输出进度（主控 set stop_event 后，LLM 重试循环和 7 协议 llm_mutator 不检查它，导致 Worker 线程继续运行）
+  — `llm_mutator_base.generate_mutations` 新增 `stop_event` 参数，入口 + 每次重试循环前检查 `stop_event.is_set()`；7 协议 `llm_mutator.py` 签名透传；7 协议 `client.py` 调用时传入全局 `stop_event`
+  — 17 文件，+259 行，pytest 147 passed
+- **报告影响描述模板化**：同一分类（CONN_CLOSED）下不同功能码输出完全相同的影响描述
+  — 新增 `PROTOCOL_IMPACTS` 字典（41 条 per-protocol per-func_code 细粒度描述），覆盖 Modbus 12 / S7Comm 6 / DNP3 5 / IEC104 4 / IEC61850 4 / EtherNet/IP 5 / OPC UA 5
+  — `_get_impact(key, code, lang, protocol_name, func_code)` 优先查 `(protocol, func_code, key)`，找不到回退通用 `IMPACTS`（向后兼容）
+  — 示例：Modbus 0x10 Write Multiple Registers → "写多个寄存器(0x10)导致连接断开，可能是请求长度校验缺陷触发缓冲区溢出或看门狗复位"；0x0B Get Comm Event Counter → "通信事件计数器(0x0B)导致连接断开，异常请求可能耗尽连接队列或日志缓冲区"
+
+### Added / 新增
+
+- **报告显示 LLM 模型信息**：报告顶部新增一行 `🔧 LLM Model: Provider=... | Model=... | Endpoint=...`
+  — `LLMStatus` 新增 `model_info` 字段 + `set_model_info(provider, name, base_url)` 方法；`generate_mutations` 成功解析 provider 后自动记录；`serialize()` 同步输出
+  — 便于审计 fuzz 时实际使用的模型版本，尤其在多模型配置或 CI 流水线中
+
+### Changed / 变更
+
+- 版本号从 `1.8.3` 升级至 `1.8.4`，`start_fuzz.bat` / `make_release.bat` fallback 同步更新
+- README.md / README.zh.md 路线图 Current 行版本号同步
+
+### 安装
+**方式一：下载 EXE（推荐）**
+- 下载 `IndusFuzz-v1.8.4-win64.zip`
+- 解压到任意目录
+- 双击 `IndusFuzz.exe`
+
+**方式二：从源码运行（开发调试用）**
+
+前置要求：Python 3.12+、Git、Windows 系统（项目使用 pywin32 / Windows DPAPI）
+
+```
+git clone https://github.com/TaoYaTou/IndusFuzz.git
+cd IndusFuzz
+pip install -r requirements.txt
+```
+
+
 ## [1.8.3] - 2026-09-20
 
 ### 本版本更新
