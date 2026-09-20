@@ -166,12 +166,29 @@ class OPCUAClient(ProtocolBase):
             hel = build_opcua_hello(self._endpoint or f"opc.tcp://{host}:{port}")
             if not hel:
                 s.close()
+                print(f"[OPCUA] 握手失败: Hello 报文构造失败")
                 return False
             s.sendall(hel)
             try:
-                s.recv(1024)
-            except Exception:
-                pass
+                resp = s.recv(4096)
+            except socket.timeout:
+                s.close()
+                print(f"[OPCUA] 握手失败: 真实设备 {host}:{port} 未响应 Hello (超时)")
+                return False
+            except OSError:
+                s.close()
+                print(f"[OPCUA] 握手失败: 真实设备 {host}:{port} 连接中断")
+                return False
+            # 校验 OPC UA 必须响应 "ACK" 或 "ERR"
+            if not resp or len(resp) < 4:
+                s.close()
+                print(f"[OPCUA] 握手失败: 响应过短 (len={len(resp) if resp else 0})")
+                return False
+            if resp[:3] not in (b"ACK", b"ERR"):
+                s.close()
+                print(f"[OPCUA] 握手失败: 响应不以 ACK/ERR 开头 (got {resp[:8]!r})")
+                return False
+
             self._sock = s
             self._connected = True
             self._persistent = True

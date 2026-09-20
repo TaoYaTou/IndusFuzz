@@ -145,12 +145,29 @@ class IEC104Client(ProtocolBase):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(self._timeout)
             s.connect((host, port))
+            # STARTDT U-format: type=0x07 (U-format), START=1, STOP=0, DTER=1
             startdt = bytes([0x68, 0x04, 0x07, 0x00, 0x00, 0x00])
             s.sendall(startdt)
             try:
-                s.recv(1024)
-            except Exception:
-                pass
+                resp = s.recv(4096)
+            except socket.timeout:
+                s.close()
+                print(f"[IEC104] 握手失败: 真实设备 {host}:{port} 未响应 STARTDT (超时)")
+                return False
+            except OSError:
+                s.close()
+                print(f"[IEC104] 握手失败: 真实设备 {host}:{port} 连接中断")
+                return False
+            # 校验：IEC 104 APDU 必须以 0x68 开头
+            if not resp or len(resp) < 2:
+                s.close()
+                print(f"[IEC104] 握手失败: 响应过短 (len={len(resp) if resp else 0})")
+                return False
+            if resp[0] != 0x68:
+                s.close()
+                print(f"[IEC104] 握手失败: 帧头非 0x68 (got 0x{resp[0]:02X})")
+                return False
+
             self._sock = s
             self._connected = True
             self._persistent = True

@@ -94,6 +94,38 @@ class ModbusClient(ProtocolBase):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(self._timeout)
             s.connect((host, port))
+            # 协议层握手：发 Read Holding Registers (fc=0x03, 合法最小请求)
+            # 真实 Modbus PLC 必须返回合法 MBAP 帧；假 TCP server 不会
+            handshake = bytes([
+                0x00, 0x01,                   # transaction_id
+                0x00, 0x00,                   # protocol_id (Modbus TCP 固定 0x0000)
+                0x00, 0x06,                   # length = unit_id + pdu(5)
+                self._unit_id & 0xFF,          # unit_id
+                0x03,                          # fc=Read Holding Registers
+                0x00, 0x00,                    # start_addr = 0
+                0x00, 0x01,                    # quantity = 1
+            ])
+            s.sendall(handshake)
+            try:
+                resp = s.recv(1024)
+            except socket.timeout:
+                s.close()
+                print(f"[Modbus] 握手失败: 真实设备 {host}:{port} 未响应协议层请求 (超时)")
+                return False
+            except OSError:
+                s.close()
+                print(f"[Modbus] 握手失败: 真实设备 {host}:{port} 连接中断")
+                return False
+            # 校验：MBAP 头至少 7 字节；protocol_id 必须是 0x0000
+            if not resp or len(resp) < 7:
+                s.close()
+                print(f"[Modbus] 握手失败: 响应过短 (len={len(resp) if resp else 0})")
+                return False
+            if resp[2:4] != b"\x00\x00":
+                s.close()
+                print(f"[Modbus] 握手失败: protocol_id 非 0x0000 (got 0x{resp[2]:02X}{resp[3]:02X})")
+                return False
+
             self._sock = s
             self._connected = True
             self._persistent = True

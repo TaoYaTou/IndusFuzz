@@ -161,9 +161,25 @@ class DNP3Client(ProtocolBase):
             reset = reset_body + struct.pack("<H", _crc16(reset_body))
             s.sendall(reset)
             try:
-                s.recv(1024)
-            except Exception:
-                pass
+                resp = s.recv(4096)
+            except socket.timeout:
+                s.close()
+                print(f"[DNP3] 握手失败: 真实设备 {host}:{port} 未响应 Reset Link (超时)")
+                return False
+            except OSError:
+                s.close()
+                print(f"[DNP3] 握手失败: 真实设备 {host}:{port} 连接中断")
+                return False
+            # 校验：DNP3 响应必须以 0x05 0x64 帧头开头，且控制字节为 0xC4 (Reset Link Ack)
+            if not resp or len(resp) < 4:
+                s.close()
+                print(f"[DNP3] 握手失败: 响应过短 (len={len(resp) if resp else 0})")
+                return False
+            if resp[0] != 0x05 or resp[1] != 0x64:
+                s.close()
+                print(f"[DNP3] 握手失败: 帧头非 0x0564 (got 0x{resp[0]:02X}{resp[1]:02X})")
+                return False
+
             self._sock = s
             self._connected = True
             self._persistent = True
