@@ -293,15 +293,15 @@ Choose **No LLM** to use local deterministic random mutation directly. No API ke
 
 ## 11. Supported Protocols
 
-| Protocol | Default Port | Typical Devices | Built-in Mock Slave |
-|----------|--------------|-----------------|---------------------|
-| Modbus TCP | 5020 | PLC, RTU, VFD | Yes |
-| S7Comm | 10102 | Siemens S7 PLC | Yes |
-| DNP3 | 20000 | RTU, IED (power) | Yes |
-| IEC 60870-5-104 | 2404 | Substation SCADA telecontrol | Yes |
-| IEC 61850 MMS | 102 | Substation IED, bay controller | Yes |
-| EtherNet/IP | 44818 | Rockwell / Allen-Bradley controllers | Yes |
-| OPC UA | 4840 | Industrial gateway, HMI, server | Yes |
+| Protocol | Default Port | Typical Devices | Built-in Mock Slave | Simulator Tested |
+|----------|--------------|-----------------|---------------------|------------------|
+| Modbus TCP | 5020 | PLC, RTU, VFD | Yes | ✅ (full response) |
+| S7Comm | 10102 | Siemens S7 PLC | Yes | ✅ (COTP Setup + S7 Setup + DATA phases) |
+| DNP3 | 20000 | RTU, IED (power) | Yes | — |
+| IEC 60870-5-104 | 2404 | Substation SCADA telecontrol | Yes | — |
+| IEC 61850 MMS | 102 | Substation IED, bay controller | Yes | ✅ (COTP Setup + MMS Initiate + READ phases) |
+| EtherNet/IP | 44818 | Rockwell / Allen-Bradley controllers | Yes | — |
+| OPC UA | 4840 | Industrial gateway, HMI, server | Yes | — |
 
 More protocols are expected to be added in the future.
 
