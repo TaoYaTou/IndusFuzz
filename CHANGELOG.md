@@ -6,18 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [1.8.4] - 2026-09-20
+## [1.8.5] - 2026-09-20
 
 ### 本版本更新
-- 修复了一些BUG
+- S7comm / IEC61850 仿真器业务层补全 + 7 协议 client.connect() 强握手校验
 
 ### Bug Fixes / 修复
 
 - **S7comm / IEC61850 仿真器半成品修复**（server/s7comm_server.py + server/iec61850_server.py）
   — S7comm server：重写为三阶段协议状态机 `COTP Setup (0xE0) → S7 Setup (opcode=0x32) → DATA`；修复 COTP Setup Request type 识别（S7comm 用 0xE0，经典 ISO 8650 用 0x11）；对称交换 src/dst ref 构造 0xD0 Ack
-  — IEC61850 server：重写为两阶段状态机 `COTP Setup → DATA`；修复 MMS PDU offset（原代码 data[10] 应为 data[9]：TPKT4 + COTP Data Transfer fixed5 = 9，ISO 8650 Session=1 → MMS 从 10 开始 → data[9] 错 data[10] 也错，实际是 fixed-format COTP Data Transfer 5 bytes + Session 1 byte = offset 10）；修复 TPKT 起始字节同时接受 0x30 (Connectionless) 和 0x03 (Connection Oriented)
+  — IEC61850 server：重写为两阶段状态机 `COTP Setup → DATA`；修复 MMS PDU offset（原代码 data[10] 应为 data[9]）；修复 TPKT 起始字节同时接受 0x30 (Connectionless) 和 0x03 (Connection Oriented)
   — 回归测试：IndusFuzz 原生 S7CommClient / IEC61850Client `connect()` 全 PASS + `send_payload` 正常响应
+- **7 协议 client.connect() 假成功反模式修复**（src/protocols/*/client.py）
+  — Modbus：纯 TCP SYN/ACK 就算成功 → 现在发 Read Holding Registers (fc=0x03)，校验 MBAP protocol_id=0x0000
+  — OPC UA：发 Hello 后 `except: pass` 吞掉超时 → 现在校验响应必须以 `ACK`/`ERR` 开头
+  — DNP3：发 Reset Link 后 `except: pass` 吞掉超时 → 现在校验帧头 0x05 0x64
+  — IEC104：发 STARTDT 后 `except: pass` 吞掉超时 → 现在校验帧头 0x68
+  — 残酷验证：假 TCP server（只有 SYN/ACK）→ 4/4 clients 全部正确失败（修复前 0/4）
+  — 真仿真器验证：7/7 clients 全部正确通过
 - **报告模型信息位置**：LLM 模型 + GPU 加速合并成「运行信息」块，移除独立 LLM Model 段落；HTML 改 → PDF 自动同步（同 HTML 源）
+
+### Changed / 变更
+
+- 版本号从 `1.8.4` 升级至 `1.8.5`，`version.py` / `build.ps1` / `make_release.bat` / `start_fuzz.bat` fallback 全部同步
+
+### 安装
+**方式一：下载 EXE（推荐）**
+- 下载 `IndusFuzz-v1.8.5-win64.zip`
+- 解压到任意目录
+- 双击 `IndusFuzz.exe`
+
+---
+
+## [1.8.4] - 2026-09-20
+
+### 本版本更新
+- 超时竞态 + 报告细粒度影响描述
+
+### Bug Fixes / 修复
+
 - **超时竞态条件**：全局超时触发后后台任务仍在输出进度（主控 set stop_event 后，LLM 重试循环和 7 协议 llm_mutator 不检查它，导致 Worker 线程继续运行）
   — `llm_mutator_base.generate_mutations` 新增 `stop_event` 参数，入口 + 每次重试循环前检查 `stop_event.is_set()`；7 协议 `llm_mutator.py` 签名透传；7 协议 `client.py` 调用时传入全局 `stop_event`
   — 17 文件，+259 行，pytest 147 passed
@@ -29,12 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **报告显示 LLM 模型信息**：报告顶部新增一行 `🔧 LLM Model: Provider=... | Model=... | Endpoint=...`
   — `LLMStatus` 新增 `model_info` 字段 + `set_model_info(provider, name, base_url)` 方法；`generate_mutations` 成功解析 provider 后自动记录；`serialize()` 同步输出
-  — 便于审计 fuzz 时实际使用的模型版本，尤其在多模型配置或 CI 流水线中
 
 ### Changed / 变更
 
 - 版本号从 `1.8.3` 升级至 `1.8.4`，`start_fuzz.bat` / `make_release.bat` fallback 同步更新
-- README.md / README.zh.md 路线图 Current 行版本号同步
 
 ### 安装
 **方式一：下载 EXE（推荐）**

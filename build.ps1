@@ -16,10 +16,10 @@ try {
     if ($LASTEXITCODE -eq 0 -and $VersionOutput) {
         $Version = ($VersionOutput | Select-Object -Last 1).Trim()
     } else {
-        $Version = "1.8.3"  # fallback
+        $Version = "1.8.5"  # fallback
     }
 } catch {
-    $Version = "1.8.3"
+    $Version = "1.8.5"
 }
 $ReleaseDir = "IndusFuzz-v$Version-win64"
 $ZipName = "IndusFuzz-v$Version-win64.zip"

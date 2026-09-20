@@ -10,7 +10,7 @@ import os
 import subprocess
 
 
-HARDCODED_VERSION = "1.8.4"
+HARDCODED_VERSION = "1.8.5"
 
 
 def _from_git():
