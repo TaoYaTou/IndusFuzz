@@ -111,7 +111,8 @@ PRD 早期设想为「多智能体协作（种子生成 / 测试用例生成 / �
 
 | 版本     | 主要变更                                                      | 状态      |
 | ------ | --------------------------------------------------------- | ------- |
-| v1.8.2 | Windows CI runner（pywin32 环境标记）、GitHub Release 自动 notes、构建产物清理、black 24.10.0 格式化、mcp 依赖                                                          | 已完成（当前） |
+| v1.8.3 | 版本 fallback 一致性修复（build.ps1/make_release/start_fuzz/version_info.txt）、README/CONTRIBUTING 扁平结构同步、自动化版本合规审计 | 已完成（当前） |
+| v1.8.2 | Windows CI runner（pywin32 环境标记）、GitHub Release 自动 notes、构建产物清理、black 24.10.0 格式化、mcp 依赖                                                    | 已完成 |
 | v1.8.1 | 测试体系 + CI/CD（147 项 pytest、test/release 工作流、pre-commit、动态版本）                | 已完成 |
 | v2.0.0 | 跨平台支持（macOS/Linux）、桌面端、NVD/CNVD 比对                        | 远期      |
 
@@ -210,7 +211,7 @@ python main.py
 
 ### EXE 安装（推荐普通用户）
 
-**可从 Releases 获取。** 从 GitHub [Releases](../../releases) 页面下载 `IndusFuzz.exe`；也可用打包工具链本地构建（产物见 `IndusFuzz-v1.8.2-win64\IndusFuzz.exe`）。
+**可从 Releases 获取。** 从 GitHub [Releases](../../releases) 页面下载 `IndusFuzz.exe`；也可用打包工具链本地构建（产物见 `IndusFuzz-v1.8.3-win64\IndusFuzz.exe`）。
 
 ### 验证安装是否成功
 
