@@ -8,13 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.8.3] - 2026-09-20
 
-### Fixed
-- 修复了一些BUG
-- 修复 build.ps1 / make_release.bat / start_fuzz.bat / version_info.txt 硬编码版本号与 version.py HARDCODED 不一致
+### 本版本更新
 
-### Changed
-- README.md / README.zh.md / CONTRIBUTING.md 目录树同步为 v1.8.3 扁平结构
-- 版本合规性审计脚本自动识别并修复所有 .py / .bat / .ps1 / .md / .yml 中的过时版本号
+- 修复了一些BUG
+- CI/CD 工作流完善：test.yml + release.yml 切换 Windows runner、black 格式化检查集成、覆盖率门禁 --cov-fail-under=16
+- Release 说明自动提取：release.yml 从 CHANGELOG.md 提取对应版本段作为 Release body
+- 版本号全量同步：build.ps1 / make_release.bat / start_fuzz.bat / version_info.txt / 文档 / 注释中的所有过时版本号统一修正
+- 扁平迁移收尾：README.md / README.zh.md / CONTRIBUTING.md 目录树、docs/PRD 全文版本号同步 v1.8.3
+
+### 核心能力
+
+暂无更新
+
+### 安全特性
+
+暂无更新
+
+### 安装
+
+暂无更新
 
 ## [1.8.2] - 2026-09-20
 
