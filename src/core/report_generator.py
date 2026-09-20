@@ -45,8 +45,9 @@ def _get_cn_font_path():
             return _CN_FONT_PATH
         _CN_FONT_PATH = local_font
         return _CN_FONT_PATH
-    sys_font = r"C:\Windows\Fonts\simhei.ttf"
-    if os.path.exists(sys_font):
+    sys_font_dir = os.environ.get("WINDIR")
+    sys_font = os.path.join(sys_font_dir, "Fonts", "simhei.ttf") if sys_font_dir else None
+    if sys_font and os.path.exists(sys_font):
         try:
             target_dir = os.path.join(app_dir(), "assets", "fonts")
             os.makedirs(target_dir, exist_ok=True)

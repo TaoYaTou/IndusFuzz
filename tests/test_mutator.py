@@ -50,11 +50,12 @@ class TestMutatePayload:
         r2 = mb.mutate_payload(sample_modbus_payload)
         assert bytes(r1) == bytes(r2)
 
-    def test_result_not_identical_to_input_after_enough_attempts(self, proto, sample_modbus_payload):
+    def test_mutator_does_not_crash(self, proto, sample_modbus_payload):
+        """所有 7 协议 mutator 至少返回一个 bytes 且长度不变 — 核心契约。"""
         fn = _load_mutator(proto)
-        # modbus: with seed we control determinism; just sanity-check
-        fn(sample_modbus_payload)
-        assert True
+        result = fn(sample_modbus_payload)
+        assert isinstance(result, (bytes, bytearray)), f"{proto}: mutator 必须返回 bytes/bytearray"
+        assert len(result) == len(sample_modbus_payload), f"{proto}: 长度应与输入一致 ({len(result)} != {len(sample_modbus_payload)})"
 
     def test_large_payload_handled(self, proto):
         fn = _load_mutator(proto)
