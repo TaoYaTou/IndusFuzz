@@ -31,7 +31,7 @@ def _from_git():
         )
         if result.returncode == 0 and result.stdout.strip():
             raw = result.stdout.strip()
-            # Strip leading 'v' if present: v1.8.0 → 1.8.0
+            # Strip leading 'v' if present: v1.8.3 → 1.8.3
             if raw.startswith("v"):
                 raw = raw[1:]
             return raw

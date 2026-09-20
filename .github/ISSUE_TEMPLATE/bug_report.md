@@ -38,7 +38,7 @@ assignees: ""
 |------|-----|
 | 操作系统 | [e.g. Windows 11 23H2] |
 | Python 版本 | [e.g. 3.12.7] |
-| IndusFuzz 版本 | [e.g. 1.8.0] |
+| IndusFuzz 版本 | [e.g. 1.8.3] |
 | 测试目标 | [e.g. Modbus TCP 模拟从站 / 真实 PLC] |
 | LLM 来源 | [e.g. 本地 Ollama qwen2.5-coder:14b] |
 
