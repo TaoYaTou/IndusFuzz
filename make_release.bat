@@ -7,7 +7,7 @@ cd /d "%~dp0"
 REM Dynamically read version from src/core/version.py (single source of truth)
 set "VENV_PY=%~dp0agentscope_env\Scripts\python.exe"
 for /f "usebackq delims=" %%v in ("%VENV_PY%" -c "import sys; sys.path.insert(0, r'%~dp0'); from src.core.version import get_version; print(get_version())" 2^>nul) do set "VERSION=%%v"
-if "%VERSION%"=="" set "VERSION=1.8.0"
+if "%VERSION%"=="" set "VERSION=1.8.2"
 set "RELEASE_DIR=IndusFuzz-v%VERSION%-win64"
 set "ZIP_NAME=IndusFuzz-v%VERSION%-win64.zip"
 
