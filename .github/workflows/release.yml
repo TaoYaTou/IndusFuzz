@@ -71,6 +71,33 @@ jobs:
             IndusFuzz-Desktop-*-win64.zip
           if-no-files-found: error
 
+      - name: Extract CHANGELOG section for release notes
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = $tag -replace '^v', ''
+          $targetHeader = "## [$version]"
+          $lines = Get-Content CHANGELOG.md -Encoding UTF8
+          $start = -1
+          $end = $lines.Length
+          for ($i = 0; $i -lt $lines.Length; $i++) {
+            if ($lines[$i] -match [regex]::Escape($targetHeader)) {
+              $start = $i
+              continue
+            }
+            if ($start -ge 0 -and $lines[$i] -match '^## \[') {
+              $end = $i
+              break
+            }
+          }
+          if ($start -lt 0) {
+            Write-Output "CHANGELOG section for $version not found, skipping body"
+            Set-Content release_notes.md ""
+          } else {
+            $section = $lines[$start..($end - 1)] -join "`n"
+            Set-Content release_notes.md $section -Encoding UTF8
+            Write-Output "Extracted CHANGELOG section ($($section.Length) chars)"
+          }
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -79,4 +106,4 @@ jobs:
             dist/IndusFuzz.exe
             IndusFuzz-Desktop-*-win64.zip
           prerelease: ${{ steps.prerelease.outputs.prerelease }}
-          generate_release_notes: true
+          body_path: release_notes.md
