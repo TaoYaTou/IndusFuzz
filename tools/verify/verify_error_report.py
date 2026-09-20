@@ -38,7 +38,12 @@ errors = [
     },
 ]
 
-ollama_cfg = {"provider": "ollama", "name": "qwen2.5-coder:7b", "base_url": "http://localhost:11434/v1", "api_key": "ollama"}
+ollama_cfg = {
+    "provider": "ollama",
+    "name": "qwen2.5-coder:7b",
+    "base_url": "http://localhost:11434/v1",
+    "api_key": "ollama",
+}
 
 html, pdf, json_path = generate_error_report(errors, 7, llm_config=ollama_cfg, suggestion="test", lang="zh")
 check("错误报告 HTML 生成", os.path.exists(html) and os.path.getsize(html) > 0)
@@ -71,8 +76,16 @@ results = [
     {"round": 1, "func_code": 0x01, "mutation": "aa", "response": "bb", "classification": "NORMAL"},
     {"round": 1, "func_code": 0x01, "mutation": "cc", "response": "dd", "classification": "EXCEPTION"},
 ]
-rp, _ = generate_report(results, [], [], protocol_name="s7comm", target="127.0.0.1:15103",
-                        scenario="local", protocol_timed_out=True, protocol_timeout=120)
+rp, _ = generate_report(
+    results,
+    [],
+    [],
+    protocol_name="s7comm",
+    target="127.0.0.1:15103",
+    scenario="local",
+    protocol_timed_out=True,
+    protocol_timeout=120,
+)
 with open(rp, "r", encoding="utf-8") as f:
     timeout_html = f.read()
 check("超时报告含强制中断警示", "被强制中断" in timeout_html)
@@ -80,8 +93,9 @@ check("超时报告含 120 秒说明", "120" in timeout_html)
 check("超时报告含推理过慢原因", "推理过慢" in timeout_html)
 check("超时报告含功能码建议", "功能码" in timeout_html)
 
-rp2, _ = generate_report(results, [], [], protocol_name="s7comm", target="127.0.0.1:15103",
-                         scenario="local", protocol_timed_out=False)
+rp2, _ = generate_report(
+    results, [], [], protocol_name="s7comm", target="127.0.0.1:15103", scenario="local", protocol_timed_out=False
+)
 with open(rp2, "r", encoding="utf-8") as f:
     normal_html = f.read()
 check("非超时报告不含强制中断", "被强制中断" not in normal_html)
@@ -90,4 +104,3 @@ print("=" * 60)
 all_pass = all(ok for _, ok in checks)
 print(f"错误报告+超时+建议验证: {sum(1 for _, ok in checks if ok)}/{len(checks)} " + ("PASS" if all_pass else "FAIL"))
 sys.exit(0 if all_pass else 1)
-

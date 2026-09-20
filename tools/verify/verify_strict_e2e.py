@@ -80,42 +80,60 @@ opcua = OPCUAClient()
 
 CASES = [
     {
-        "name": "s7comm", "script": "s7comm_server.py", "port": 15102, "client": s7,
+        "name": "s7comm",
+        "script": "s7comm_server.py",
+        "port": 15102,
+        "client": s7,
         "valid": lambda: s7.build_request(func_code=0x04),
         "bad_func": lambda: s7.build_request(func_code=0x11),
         "malformed": lambda: mutate_byte(s7.build_request(func_code=0x04), 0, 0x04),
         "classify": lambda payload, resp: s7._classify(payload, resp),
     },
     {
-        "name": "dnp3", "script": "dnp3_server.py", "port": 25000, "client": dnp3,
+        "name": "dnp3",
+        "script": "dnp3_server.py",
+        "port": 25000,
+        "client": dnp3,
         "valid": lambda: build_dnp3_request(function_code=0x01),
         "bad_func": lambda: build_dnp3_request(function_code=0x2F),
         "malformed": lambda: mutate_byte(build_dnp3_request(function_code=0x01), 0, 0x06),
         "classify": lambda payload, resp: dnp3._classify(resp),
     },
     {
-        "name": "iec104", "script": "iec104_server.py", "port": 12404, "client": i104,
+        "name": "iec104",
+        "script": "iec104_server.py",
+        "port": 12404,
+        "client": i104,
         "valid": lambda: build_iec104_request(type_id=0x64),
         "bad_func": lambda: build_iec104_request(type_id=0x01),
         "malformed": lambda: mutate_byte(build_iec104_request(type_id=0x64), 0, 0x00),
         "classify": lambda payload, resp: i104._classify(resp),
     },
     {
-        "name": "iec61850", "script": "iec61850_server.py", "port": 1102, "client": i61850,
+        "name": "iec61850",
+        "script": "iec61850_server.py",
+        "port": 1102,
+        "client": i61850,
         "valid": lambda: build_iec61850_request(pdu_type=0xB0),
         "bad_func": lambda: build_iec61850_request(pdu_type=0x99),
         "malformed": lambda: mutate_byte(build_iec61850_request(pdu_type=0xB0), 0, 0x31),
         "classify": lambda payload, resp: i61850._classify(resp),
     },
     {
-        "name": "enip", "script": "enip_server.py", "port": 44819, "client": enip,
+        "name": "enip",
+        "script": "enip_server.py",
+        "port": 44819,
+        "client": enip,
         "valid": lambda: build_enip_request(service_code=0x01),
         "bad_func": lambda: build_enip_request(service_code=0x99),
         "malformed": lambda: mutate_byte(mutate_byte(build_enip_request(service_code=0x01), 0, 0x00), 1, 0x99),
         "classify": lambda payload, resp: enip._classify(resp),
     },
     {
-        "name": "opcua", "script": "opcua_server.py", "port": 14840, "client": opcua,
+        "name": "opcua",
+        "script": "opcua_server.py",
+        "port": 14840,
+        "client": opcua,
         "valid": lambda: build_opcua_request(446),
         "bad_func": lambda: build_opcua_request(999),
         "malformed": lambda: b"XXX" + build_opcua_request(446)[3:],
@@ -168,4 +186,3 @@ for case in CASES:
 fails = [r for r in results if r[0] == "FAIL"]
 print(f"\n总计 {len(results)} 项，通过 {len(results) - len(fails)} 项，失败 {len(fails)} 项")
 sys.exit(1 if fails else 0)
-

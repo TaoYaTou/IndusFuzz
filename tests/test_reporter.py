@@ -64,7 +64,9 @@ class TestGenerateReport:
         skipped = []
         failures = []
         out = generate_report(
-            results, skipped, failures,
+            results,
+            skipped,
+            failures,
             protocol_name="modbus",
             target="127.0.0.1:5020",
         )

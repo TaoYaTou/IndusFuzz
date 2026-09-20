@@ -2,7 +2,13 @@ import pytest
 import importlib
 
 _PROTO_NAMES = [
-    "modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua",
+    "modbus",
+    "s7comm",
+    "dnp3",
+    "iec104",
+    "iec61850",
+    "enip",
+    "opcua",
 ]
 
 
@@ -37,6 +43,7 @@ class TestMutatePayload:
     def test_mutate_is_deterministic_with_seed(self, proto, sample_modbus_payload):
         # modbus exposes seed_mutator; the others use module-level RNG
         import src.protocols.modbus.mutator as mb
+
         mb.seed_mutator(42)
         r1 = mb.mutate_payload(sample_modbus_payload)
         mb.seed_mutator(42)

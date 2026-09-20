@@ -10,10 +10,12 @@ deleted_dirs = []
 freed_bytes = 0
 errors = []
 
+
 def should_skip(path):
     rel = os.path.relpath(path, PROJECT_ROOT)
     parts = rel.replace("\\", "/").split("/")
     return any(p in KEEP_DIRS for p in parts)
+
 
 for root, dirs, files in os.walk(PROJECT_ROOT, topdown=False):
     if should_skip(root):

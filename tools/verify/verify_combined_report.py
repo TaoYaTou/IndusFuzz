@@ -21,32 +21,57 @@ def check(name, ok):
 
 set_gpu_config(False, "")
 
-single_data = [{
-    "protocol_name": "s7comm",
-    "target": "127.0.0.1:5020",
-    "results": [
-        {"round": 1, "func_code": 0x04, "mutation": "aa", "response": "bb", "classification": "NORMAL", "severity": "low"},
-        {"round": 1, "func_code": 0x11, "mutation": "cc", "response": "dd", "classification": "EXCEPTION", "severity": "high"},
-    ],
-    "skipped": [],
-    "build_failures": [],
-    "llm_status": None,
-    "slave_mode": "strict",
-    "protocol_timed_out": False,
-}]
+single_data = [
+    {
+        "protocol_name": "s7comm",
+        "target": "127.0.0.1:5020",
+        "results": [
+            {
+                "round": 1,
+                "func_code": 0x04,
+                "mutation": "aa",
+                "response": "bb",
+                "classification": "NORMAL",
+                "severity": "low",
+            },
+            {
+                "round": 1,
+                "func_code": 0x11,
+                "mutation": "cc",
+                "response": "dd",
+                "classification": "EXCEPTION",
+                "severity": "high",
+            },
+        ],
+        "skipped": [],
+        "build_failures": [],
+        "llm_status": None,
+        "slave_mode": "strict",
+        "protocol_timed_out": False,
+    }
+]
 
-multi_data = single_data + [{
-    "protocol_name": "dnp3",
-    "target": "127.0.0.1:20000",
-    "results": [
-        {"round": 1, "func_code": 0x01, "mutation": "ee", "response": "ff", "classification": "NORMAL", "severity": "low"},
-    ],
-    "skipped": [],
-    "build_failures": [],
-    "llm_status": None,
-    "slave_mode": "strict",
-    "protocol_timed_out": True,
-}]
+multi_data = single_data + [
+    {
+        "protocol_name": "dnp3",
+        "target": "127.0.0.1:20000",
+        "results": [
+            {
+                "round": 1,
+                "func_code": 0x01,
+                "mutation": "ee",
+                "response": "ff",
+                "classification": "NORMAL",
+                "severity": "low",
+            },
+        ],
+        "skipped": [],
+        "build_failures": [],
+        "llm_status": None,
+        "slave_mode": "strict",
+        "protocol_timed_out": True,
+    }
+]
 
 log_path = os.path.join(FUZZ_AGENT, "reports", LOG_FILENAME)
 if os.path.exists(log_path):
@@ -84,8 +109,10 @@ check("strip_emoji清理emoji", _strip_emoji("⚠️🔴🟡🟢 text") == " tex
 
 err_html, err_pdf = generate_error_report(
     [{"protocol": "dnp3", "error_type": "timeout", "elapsed": 120.0, "reason": "test"}],
-    1, llm_config={"provider": "ollama", "name": "qwen2.5-coder:7b"},
-    suggestion="test suggestion", lang="zh",
+    1,
+    llm_config={"provider": "ollama", "name": "qwen2.5-coder:7b"},
+    suggestion="test suggestion",
+    lang="zh",
 )
 check("错误报告HTML生成", os.path.exists(err_html))
 check("错误报告PDF生成", os.path.exists(err_pdf))
@@ -100,4 +127,3 @@ print("=" * 60)
 all_pass = all(ok for _, ok in checks)
 print(f"整合报告验证: {sum(1 for _, ok in checks if ok)}/{len(checks)} " + ("PASS" if all_pass else "FAIL"))
 sys.exit(0 if all_pass else 1)
-

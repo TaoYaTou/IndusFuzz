@@ -18,23 +18,27 @@ def check(item, expect, got):
 
 try:
     import src.core.fuzz_loop_llm  # noqa: F401
+
     check("7.2 fuzz_loop_llm 导入", "OK", "OK")
 except Exception as e:
     check("7.2 fuzz_loop_llm 导入", "OK", f"CRASH: {e}")
     sys.exit(1)
 
 from src.protocols import registry
+
 protocols = sorted(registry.list_protocols())
 check("7.2 registry 协议数", "7", str(len(protocols)))
 check("7.2 registry 协议列表", "dnp3,enip,iec104,iec61850,modbus,opcua,s7comm", ",".join(protocols))
 
 try:
     import src.core.menu  # noqa: F401
+
     check("7.3 menu.py 导入", "OK", "OK")
 except Exception as e:
     check("7.3 menu.py 导入", "OK", f"CRASH: {e}")
 
 from src.core import slave_launcher
+
 missing = []
 for p in ["modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua"]:
     path = slave_launcher._get_slave_script(p)
@@ -43,6 +47,7 @@ for p in ["modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua"]:
 check("7.4 从站脚本发现(7个)", "0缺失", f"{len(missing)}缺失{(':' + ','.join(missing)) if missing else ''}")
 
 from src.core import report_generator
+
 cfg_keys = sorted(report_generator.PROTOCOL_CONFIG.keys())
 check("7.5 PROTOCOL_CONFIG 条目数", "7", str(len(cfg_keys)))
 check("7.5 PROTOCOL_CONFIG 覆盖", "dnp3,enip,iec104,iec61850,modbus,opcua,s7comm", ",".join(cfg_keys))
@@ -72,7 +77,7 @@ hosts = []
 for f in glob.glob(os.path.join(FUZZ_AGENT, "server", "*_server.py")):
     with open(f, "r", encoding="utf-8") as fh:
         content = fh.read()
-    if '0.0.0.0' in content:
+    if "0.0.0.0" in content:
         hosts.append(os.path.basename(f))
     if 'DEFAULT_HOST = "127.0.0.1"' not in content:
         hosts.append(os.path.basename(f) + "(无127.0.0.1默认)")
@@ -94,7 +99,7 @@ key_hits = []
 for f in glob.glob(os.path.join(FUZZ_AGENT, "src", "protocols", "*", "*.py")):
     with open(f, "r", encoding="utf-8") as fh:
         content = fh.read()
-    for marker in ("sk-", "api_key=\"", "api_key='", "API_KEY=\"", "API_KEY='"):
+    for marker in ("sk-", 'api_key="', "api_key='", 'API_KEY="', "API_KEY='"):
         if marker in content:
             key_hits.append(f"{os.path.relpath(f, FUZZ_AGENT)}:{marker}")
 check("5.12.2 无硬编码密钥", "0", str(len(key_hits)))
@@ -108,9 +113,12 @@ for f in glob.glob(os.path.join(FUZZ_AGENT, "server", "*_server.py")):
     name = os.path.basename(f)
     if "--strict" not in content or "--port" not in content or "--host" not in content:
         strict_hits.append(name)
-check("5.12.5+ 全从站支持 --host/--port/--strict", "全部合规", "缺失: " + ",".join(strict_hits) if strict_hits else "全部合规")
+check(
+    "5.12.5+ 全从站支持 --host/--port/--strict",
+    "全部合规",
+    "缺失: " + ",".join(strict_hits) if strict_hits else "全部合规",
+)
 
 fails = [r for r in results if r[0] == "FAIL"]
 print(f"\n阶段7+5.12 静态检查: 总计 {len(results)} 项，通过 {len(results) - len(fails)} 项，失败 {len(fails)} 项")
 sys.exit(1 if fails else 0)
-

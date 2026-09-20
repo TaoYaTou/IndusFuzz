@@ -1,4 +1,4 @@
-name: Test & Lint
+﻿name: Test & Lint
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-test.txt
-          pip install flake8 black pytest-timeout
+          pip install flake8 black==24.10.0 pytest-timeout
 
       - name: Check formatting with black
         run: |

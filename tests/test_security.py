@@ -114,12 +114,14 @@ class TestMigratePlaintextConfig:
 
     def test_no_key_returns_unchanged(self):
         from src.core.security import migrate_plaintext_config
+
         cfg = {"provider": "ollama"}
         result = migrate_plaintext_config(cfg)
         assert result is cfg  # 未修改，返回原 dict
 
     def test_empty_key_returns_unchanged(self):
         from src.core.security import migrate_plaintext_config
+
         cfg = {"provider": "openai", "api_key": ""}
         result = migrate_plaintext_config(cfg)
         assert result["api_key"] == ""
@@ -127,6 +129,7 @@ class TestMigratePlaintextConfig:
 
     def test_ollama_key_returns_unchanged(self):
         from src.core.security import migrate_plaintext_config
+
         cfg = {"provider": "ollama", "api_key": "ollama://localhost:11434"}
         result = migrate_plaintext_config(cfg)
         assert result["api_key"] == "ollama://localhost:11434"
@@ -134,6 +137,7 @@ class TestMigratePlaintextConfig:
 
     def test_local_key_returns_unchanged(self):
         from src.core.security import migrate_plaintext_config
+
         cfg = {"provider": "local", "api_key": "local:///my/key.pem"}
         result = migrate_plaintext_config(cfg)
         assert result["api_key"] == "local:///my/key.pem"
@@ -147,21 +151,25 @@ class TestProtocolBase:
 
     def test_base_name_attribute(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         assert cls.name == "base"
 
     def test_disconnect_is_noop(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         assert cls.disconnect() is None  # 有默认实现
 
     def test_is_connected_default_false(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         assert cls.is_connected() is False
 
     def test_build_request_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.build_request()
@@ -171,6 +179,7 @@ class TestProtocolBase:
 
     def test_send_payload_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.send_payload(b"", "127.0.0.1", 502)
@@ -180,6 +189,7 @@ class TestProtocolBase:
 
     def test_parse_response_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.parse_response(b"")
@@ -189,6 +199,7 @@ class TestProtocolBase:
 
     def test_get_default_port_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.get_default_port()
@@ -198,6 +209,7 @@ class TestProtocolBase:
 
     def test_get_func_codes_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.get_func_codes()
@@ -207,6 +219,7 @@ class TestProtocolBase:
 
     def test_connect_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.connect("127.0.0.1", 502)
@@ -216,6 +229,7 @@ class TestProtocolBase:
 
     def test_run_fuzz_raises(self):
         from src.protocols.base import ProtocolBase
+
         cls = ProtocolBase()
         try:
             cls.run_fuzz([], "", 0, 0, {}, set(), [])
@@ -232,6 +246,7 @@ class TestMCPIntegrations:
 
     def test_codeguard_mcp_imports(self):
         from src.integrations import codeguard_mcp
+
         assert hasattr(codeguard_mcp, "MCP_AVAILABLE")
         assert hasattr(codeguard_mcp, "CodeGuardMCP")
         assert hasattr(codeguard_mcp, "create_server")
@@ -240,6 +255,7 @@ class TestMCPIntegrations:
 
     def test_codeinspectus_mcp_imports(self):
         from src.integrations import codeinspectus_mcp
+
         assert hasattr(codeinspectus_mcp, "MCP_AVAILABLE")
         assert hasattr(codeinspectus_mcp, "CodeInspectusMCP")
         assert hasattr(codeinspectus_mcp, "create_server")
@@ -248,20 +264,24 @@ class TestMCPIntegrations:
 
     def test_codeguard_mcp_mcp_available_bool(self):
         from src.integrations.codeguard_mcp import MCP_AVAILABLE
+
         assert isinstance(MCP_AVAILABLE, bool)
 
     def test_codeinspectus_mcp_mcp_available_bool(self):
         from src.integrations.codeinspectus_mcp import MCP_AVAILABLE
+
         assert isinstance(MCP_AVAILABLE, bool)
 
     def test_version_module_available(self):
         from src.core.version import __version__, get_version
+
         assert isinstance(__version__, str)
         assert len(__version__) > 0
         assert get_version() == __version__
 
     def test_version_env_override(self, monkeypatch):
         from src.core import version
+
         monkeypatch.setenv("INDUSFUZZ_VERSION", "custom-2.0.0")
         # 需要重新调用 get_version，因为 __version__ 是模块加载时算的
         assert version.get_version() == "custom-2.0.0"
@@ -275,26 +295,31 @@ class TestCodeGuardMCP:
 
     def test_name_attribute(self):
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         assert cls.name == "codeguard"
 
     def test_default_scan_root(self):
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         assert cls.scan_root == "."
 
     def test_custom_scan_root(self):
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP(scan_root="/tmp/demo")
         assert cls.scan_root == "/tmp/demo"
 
     def test_is_available_returns_bool(self):
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         assert isinstance(cls.is_available(), bool)
 
     def test_list_tools_returns_dict(self):
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         tools = cls.list_tools()
         assert isinstance(tools, list)
@@ -305,6 +330,7 @@ class TestCodeGuardMCP:
     def test_call_tool_unknown_raises(self):
         import asyncio
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         try:
             asyncio.run(cls.call_tool("nonexistent", {}))
@@ -315,6 +341,7 @@ class TestCodeGuardMCP:
     def test_call_tool_audit(self):
         import asyncio
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         result = asyncio.run(cls.call_tool("codeguard_audit", {"path": "/tmp", "level": "deep"}))
         assert result["status"] == "not_implemented"
@@ -324,6 +351,7 @@ class TestCodeGuardMCP:
     def test_call_tool_audit_default_level(self):
         import asyncio
         from src.integrations.codeguard_mcp import CodeGuardMCP
+
         cls = CodeGuardMCP()
         result = asyncio.run(cls.call_tool("codeguard_audit", {"path": "."}))
         assert result["level"] == "quick"
@@ -331,10 +359,12 @@ class TestCodeGuardMCP:
     def test_create_server_when_mcp_unavailable(self):
         # 模拟 mcp 不可用
         from src.integrations import codeguard_mcp
+
         original_flag = codeguard_mcp.MCP_AVAILABLE
         codeguard_mcp.MCP_AVAILABLE = False
         try:
             from src.integrations.codeguard_mcp import create_server
+
             try:
                 create_server()
                 assert False, "should raise"
@@ -349,11 +379,13 @@ class TestCodeInspectusMCP:
 
     def test_name_attribute(self):
         from src.integrations.codeinspectus_mcp import CodeInspectusMCP
+
         cls = CodeInspectusMCP()
         assert cls.name == "codeinspectus"
 
     def test_list_tools_has_one(self):
         from src.integrations.codeinspectus_mcp import CodeInspectusMCP
+
         cls = CodeInspectusMCP()
         tools = cls.list_tools()
         assert len(tools) >= 1
@@ -362,6 +394,7 @@ class TestCodeInspectusMCP:
     def test_call_tool_unknown_raises(self):
         import asyncio
         from src.integrations.codeinspectus_mcp import CodeInspectusMCP
+
         cls = CodeInspectusMCP()
         try:
             asyncio.run(cls.call_tool("wtf_tool", {}))
@@ -371,10 +404,12 @@ class TestCodeInspectusMCP:
 
     def test_create_server_unavailable(self):
         from src.integrations import codeinspectus_mcp
+
         original_flag = codeinspectus_mcp.MCP_AVAILABLE
         codeinspectus_mcp.MCP_AVAILABLE = False
         try:
             from src.integrations.codeinspectus_mcp import create_server
+
             try:
                 create_server()
                 assert False
@@ -392,36 +427,44 @@ class TestReportGeneratorPureFuncs:
 
     def test_esc_normal(self):
         from src.core.report_generator import _esc
+
         assert _esc("hello") == "hello"
 
     def test_esc_html_tags(self):
         from src.core.report_generator import _esc
+
         assert _esc("<script>alert(1)</script>") != "<script>alert(1)</script>"
         assert "&lt;" in _esc("<script>alert(1)</script>")
 
     def test_esc_empty(self):
         from src.core.report_generator import _esc
+
         assert _esc("") == ""
 
     def test_esc_non_string(self):
         from src.core.report_generator import _esc
+
         assert _esc(123) == "123"
 
     def test_break_long_text_short(self):
         from src.core.report_generator import _break_long_text
+
         assert _break_long_text("abc") == "abc"
 
     def test_break_long_text_exact(self):
         from src.core.report_generator import _break_long_text
+
         assert _break_long_text("12345678901234") == "12345678901234"
 
     def test_break_long_text_longer(self):
         from src.core.report_generator import _break_long_text
+
         result = _break_long_text("ABCDEF0123456789ABCDEF0123456789")
         assert "<br>" in result
 
     def test_break_long_text_empty(self):
         from src.core.report_generator import _break_long_text
+
         assert _break_long_text("") == ""
 
 
@@ -433,27 +476,32 @@ class TestVulnClawMCP:
 
     def test_name_attribute(self):
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         assert cls.name == "vulnclaw"
 
     def test_default_ollama_url(self):
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         assert cls.ollama_base_url == "http://localhost:11434"
 
     def test_default_model(self):
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         assert cls.model == "qwen2.5-coder:14b"
 
     def test_custom_constructor(self):
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP(ollama_base_url="http://10.0.0.1:11434", model="llama3")
         assert cls.ollama_base_url == "http://10.0.0.1:11434"
         assert cls.model == "llama3"
 
     def test_list_tools_has_vulnclaw_scan(self):
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         tools = cls.list_tools()
         names = [t["name"] for t in tools]
@@ -462,6 +510,7 @@ class TestVulnClawMCP:
     def test_call_tool_unknown_raises(self):
         import asyncio
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         try:
             asyncio.run(cls.call_tool("invalid_tool", {}))
@@ -472,6 +521,7 @@ class TestVulnClawMCP:
     def test_call_tool_scan(self):
         import asyncio
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         result = asyncio.run(cls.call_tool("vulnclaw_scan", {"target": "10.0.0.1", "mode": "full"}))
         assert result["status"] == "not_implemented"
@@ -481,16 +531,19 @@ class TestVulnClawMCP:
     def test_call_tool_scan_default_mode(self):
         import asyncio
         from src.integrations.vulnclaw_mcp import VulnClawMCP
+
         cls = VulnClawMCP()
         result = asyncio.run(cls.call_tool("vulnclaw_scan", {"target": "10.0.0.1"}))
         assert result["mode"] == "quick"
 
     def test_create_server_unavailable(self):
         from src.integrations import vulnclaw_mcp
+
         original_flag = vulnclaw_mcp.MCP_AVAILABLE
         vulnclaw_mcp.MCP_AVAILABLE = False
         try:
             from src.integrations.vulnclaw_mcp import create_server
+
             try:
                 create_server()
                 assert False

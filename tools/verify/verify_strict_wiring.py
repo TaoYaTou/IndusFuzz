@@ -37,20 +37,25 @@ check("英文版警示框", "Loose Mode Warning" in en_loose)
 strict_en = "\n".join(_render_slave_notice("s7comm", "local", "en", "strict"))
 check("英文版严格模式行", "Slave Mode" in strict_en and "Strict" in strict_en)
 
-results = [{
-    "round": 1, "func_code": 0x11, "mutation": "aa",
-    "response": "03000001000a00000385010000000000", "classification": "EXCEPTION",
-}]
-rp, lp = generate_report(results, [], [], protocol_name="s7comm",
-                         target="127.0.0.1:15103", scenario="local", slave_mode="loose")
+results = [
+    {
+        "round": 1,
+        "func_code": 0x11,
+        "mutation": "aa",
+        "response": "03000001000a00000385010000000000",
+        "classification": "EXCEPTION",
+    }
+]
+rp, lp = generate_report(
+    results, [], [], protocol_name="s7comm", target="127.0.0.1:15103", scenario="local", slave_mode="loose"
+)
 with open(rp, "r", encoding="utf-8") as f:
     html = f.read()
 check("宽松报告HTML含模式行", "模拟从站模式" in html)
 check("宽松报告HTML含警示框", "宽松模式警示" in html)
 check("宽松报告PDF生成", os.path.exists(rp.replace(".html", ".pdf")))
 
-rp2, _ = generate_report(results, [], [], protocol_name="s7comm",
-                         target="127.0.0.1:15103", scenario="local")
+rp2, _ = generate_report(results, [], [], protocol_name="s7comm", target="127.0.0.1:15103", scenario="local")
 with open(rp2, "r", encoding="utf-8") as f:
     html2 = f.read()
 check("默认参数=严格模式", "严格（从站校验请求报文）" in html2)
@@ -112,6 +117,7 @@ check("lan场景L无效且不写入模式", ok3 is True and lan_mode == "strict"
 
 from src.core.slave_launcher import start_slave
 import inspect
+
 sig = inspect.signature(start_slave)
 check("start_slave默认strict=True", sig.parameters["strict"].default is True)
 
@@ -119,4 +125,3 @@ print("=" * 60)
 all_pass = all(ok for _, ok in checks)
 print(f"接线验证: {sum(1 for _, ok in checks if ok)}/{len(checks)} " + ("PASS" if all_pass else "FAIL"))
 sys.exit(0 if all_pass else 1)
-

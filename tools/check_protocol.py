@@ -163,6 +163,7 @@ def _check_server(protocol_name):
 def _check_menu_scan(protocol_name):
     try:
         from src.core.menu import _scan_protocols
+
         result = _scan_protocols()
         if protocol_name in result:
             print(f"{OK} menu.py 自动扫描到协议（端口 {result[protocol_name]['default_port']}）")
@@ -213,6 +214,7 @@ def _check_core_no_duplicates():
 def _check_report_config(protocol_name):
     try:
         from src.core.report_generator import PROTOCOL_CONFIG
+
         if protocol_name in PROTOCOL_CONFIG:
             print(f"{OK} report_generator 已配置协议")
             return True

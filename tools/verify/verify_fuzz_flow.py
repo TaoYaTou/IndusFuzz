@@ -16,13 +16,13 @@ HOST = "127.0.0.1"
 
 # 协议 -> (server脚本, 端口, 功能码列表)
 PROTOCOL_CONFIG = {
-    "modbus":   ("modbus_server.py",   15020, ["0x03", "0x06"]),
-    "s7comm":   ("s7comm_server.py",   15103, ["0x04", "0x11"]),
-    "dnp3":     ("dnp3_server.py",     12000, ["0x01", "0x02"]),
-    "iec104":   ("iec104_server.py",   12404, ["0x64", "0x65"]),
-    "iec61850": ("iec61850_server.py", 1102,  ["0xB0"]),
-    "enip":     ("enip_server.py",     14481, ["0x01"]),
-    "opcua":    ("opcua_server.py",    14840, ["446"]),
+    "modbus": ("modbus_server.py", 15020, ["0x03", "0x06"]),
+    "s7comm": ("s7comm_server.py", 15103, ["0x04", "0x11"]),
+    "dnp3": ("dnp3_server.py", 12000, ["0x01", "0x02"]),
+    "iec104": ("iec104_server.py", 12404, ["0x64", "0x65"]),
+    "iec61850": ("iec61850_server.py", 1102, ["0xB0"]),
+    "enip": ("enip_server.py", 14481, ["0x01"]),
+    "opcua": ("opcua_server.py", 14840, ["446"]),
 }
 
 
@@ -41,8 +41,7 @@ def run_one(protocol):
     server_script, port, func_codes = PROTOCOL_CONFIG[protocol]
 
     slave = subprocess.Popen(
-        [VENV_PY, os.path.join(FUZZ_AGENT, "server", server_script),
-         "--port", str(port), "--strict"],
+        [VENV_PY, os.path.join(FUZZ_AGENT, "server", server_script), "--port", str(port), "--strict"],
         cwd=FUZZ_AGENT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -64,9 +63,11 @@ def run_one(protocol):
 
         # 强制禁用 LLM，走本地随机变异，确保验证可复现
         import src.core.fuzz_loop_llm as _fuzz_mod
+
         _fuzz_mod._load_model_config = lambda: None
         try:
             import importlib
+
             _llm_mod = importlib.import_module(f"src.protocols.{protocol}.llm_mutator")
             _llm_mod._load_model_config = lambda: None
         except Exception:
@@ -75,6 +76,7 @@ def run_one(protocol):
         # 必须同步打补丁才能真正禁用 LLM 路径
         try:
             import importlib
+
             _base_mod = importlib.import_module("src.protocols.llm_mutator_base")
             _base_mod._load_model_config = lambda *a, **k: {}
         except Exception:
@@ -83,6 +85,7 @@ def run_one(protocol):
         # 固定 mutator seed 消除变异随机性，确保验证可复现
         try:
             import importlib
+
             _mut_mod = importlib.import_module(f"src.protocols.{protocol}.mutator")
             if hasattr(_mut_mod, "seed_mutator"):
                 _mut_mod.seed_mutator(42)
@@ -93,14 +96,16 @@ def run_one(protocol):
         old_stdout = sys.stdout
         sys.stdout = buf
         try:
-            run({
-                "protocols": [protocol],
-                "func_codes": {protocol: func_codes},
-                "timeout": 3,
-                "scenario": "local",
-                "lang": "zh",
-                "targets": {protocol: "%s:%d" % (HOST, port)},
-            })
+            run(
+                {
+                    "protocols": [protocol],
+                    "func_codes": {protocol: func_codes},
+                    "timeout": 3,
+                    "scenario": "local",
+                    "lang": "zh",
+                    "targets": {protocol: "%s:%d" % (HOST, port)},
+                }
+            )
         finally:
             sys.stdout = old_stdout
 
@@ -162,8 +167,12 @@ def main():
         pass
 
     parser = argparse.ArgumentParser(description="IndusFuzz fuzz flow verification")
-    parser.add_argument("--protocol", choices=list(PROTOCOL_CONFIG.keys()) + ["all"],
-                        default="s7comm", help="要验证的协议（默认 s7comm，all 则全部轮换）")
+    parser.add_argument(
+        "--protocol",
+        choices=list(PROTOCOL_CONFIG.keys()) + ["all"],
+        default="s7comm",
+        help="要验证的协议（默认 s7comm，all 则全部轮换）",
+    )
     args = parser.parse_args()
 
     protocols = list(PROTOCOL_CONFIG.keys()) if args.protocol == "all" else [args.protocol]
@@ -186,4 +195,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

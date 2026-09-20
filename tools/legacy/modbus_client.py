@@ -2,24 +2,21 @@ import socket
 from scapy.all import *
 from scapy.contrib.modbus import *
 
+
 def build_read_holding_registers(transaction_id=1, unit_id=1, start_addr=0, quantity=10):
     pkt = (
-        IP(dst="127.0.0.1") / TCP(dport=5020) /
-        ModbusADURequest(
-            transId=transaction_id,
-            unitId=unit_id,
-            protoId=0
-        ) /
-        ModbusPDU03ReadHoldingRegistersRequest(
-            startAddr=start_addr,
-            quantity=quantity
-        )
+        IP(dst="127.0.0.1")
+        / TCP(dport=5020)
+        / ModbusADURequest(transId=transaction_id, unitId=unit_id, protoId=0)
+        / ModbusPDU03ReadHoldingRegistersRequest(startAddr=start_addr, quantity=quantity)
     )
     return pkt
+
 
 def extract_modbus_payload(pkt):
     modbus_bytes = bytes(pkt[ModbusADURequest])
     return modbus_bytes
+
 
 def send_via_socket(payload, host="127.0.0.1", port=5020, timeout=3):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -31,6 +28,7 @@ def send_via_socket(payload, host="127.0.0.1", port=5020, timeout=3):
         response = s.recv(1024)
         print(f">>> 收到 {len(response)} 字节响应")
         return response
+
 
 if __name__ == "__main__":
     print(">>> 构造 Modbus 报文...")

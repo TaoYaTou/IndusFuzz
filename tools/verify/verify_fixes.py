@@ -22,8 +22,10 @@ def check(name, ok):
 # ===== 1. Error report: HTML bilingual, PDF pure English =====
 err_html, err_pdf = generate_error_report(
     [{"protocol": "dnp3", "error_type": "timeout", "elapsed": 120.0, "reason": "test timeout reason"}],
-    1, llm_config={"provider": "ollama", "name": "qwen2.5-coder:7b"},
-    suggestion="test suggestion", lang="zh",
+    1,
+    llm_config={"provider": "ollama", "name": "qwen2.5-coder:7b"},
+    suggestion="test suggestion",
+    lang="zh",
 )
 
 with open(err_html, "r", encoding="utf-8") as f:
@@ -44,16 +46,44 @@ check("Error HTML bilingual has zh content", "错误报告" in eh)
 
 # ===== 2. Multi-protocol report: all sections default visible =====
 data = [
-    {"protocol_name": "s7comm", "target": "127.0.0.1:5020",
-     "results": [{"round": 1, "func_code": 0x04, "mutation": "aa", "response": "bb",
-                  "classification": "NORMAL", "severity": "low"}],
-     "skipped": [], "build_failures": [], "llm_status": None,
-     "slave_mode": "strict", "protocol_timed_out": False},
-    {"protocol_name": "dnp3", "target": "127.0.0.1:20000",
-     "results": [{"round": 1, "func_code": 0x01, "mutation": "ee", "response": "ff",
-                  "classification": "NORMAL", "severity": "low"}],
-     "skipped": [], "build_failures": [], "llm_status": None,
-     "slave_mode": "strict", "protocol_timed_out": False},
+    {
+        "protocol_name": "s7comm",
+        "target": "127.0.0.1:5020",
+        "results": [
+            {
+                "round": 1,
+                "func_code": 0x04,
+                "mutation": "aa",
+                "response": "bb",
+                "classification": "NORMAL",
+                "severity": "low",
+            }
+        ],
+        "skipped": [],
+        "build_failures": [],
+        "llm_status": None,
+        "slave_mode": "strict",
+        "protocol_timed_out": False,
+    },
+    {
+        "protocol_name": "dnp3",
+        "target": "127.0.0.1:20000",
+        "results": [
+            {
+                "round": 1,
+                "func_code": 0x01,
+                "mutation": "ee",
+                "response": "ff",
+                "classification": "NORMAL",
+                "severity": "low",
+            }
+        ],
+        "skipped": [],
+        "build_failures": [],
+        "llm_status": None,
+        "slave_mode": "strict",
+        "protocol_timed_out": False,
+    },
 ]
 rp, pdf, lp = generate_combined_report(data, scenario="local")
 with open(rp, "r", encoding="utf-8") as f:
@@ -61,8 +91,7 @@ with open(rp, "r", encoding="utf-8") as f:
 sections = re.findall(r"<div class='protocol-section[^']*'", mh)
 all_active = all("active" in s for s in sections)
 check("Multi-protocol all sections default active", len(sections) == 2 and all_active)
-check("Multi-protocol 'All' button active by default",
-      "<button class='active' onclick=\"filterProtocol('all'" in mh)
+check("Multi-protocol 'All' button active by default", "<button class='active' onclick=\"filterProtocol('all'" in mh)
 check("Multi-protocol has protocol filter", "filterProtocol" in mh)
 
 # ===== 3. Confirm error report PDF source is English-only (strip emoji + en) =====
@@ -75,7 +104,5 @@ check("Multi-protocol has protocol filter", "filterProtocol" in mh)
 
 print("=" * 60)
 all_pass = all(ok for _, ok in checks)
-print(f"Fix verification: {sum(1 for _, ok in checks if ok)}/{len(checks)} " +
-      ("PASS" if all_pass else "FAIL"))
+print(f"Fix verification: {sum(1 for _, ok in checks if ok)}/{len(checks)} " + ("PASS" if all_pass else "FAIL"))
 sys.exit(0 if all_pass else 1)
-

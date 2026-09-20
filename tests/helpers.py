@@ -3,6 +3,7 @@
 Kept tiny on purpose: only the cross-cutting isolation primitives that every
 test file may need. No fixtures (those live in conftest.py).
 """
+
 import sys
 
 _BUILTIN_PROTOCOL_MODS = [
@@ -25,6 +26,7 @@ def reset_and_reload_all():
     second time unless we pop the modules first.
     """
     from src.protocols import registry as _r
+
     _r._PROTOCOLS.clear()
     for mod in _BUILTIN_PROTOCOL_MODS:
         sys.modules.pop(mod, None)
