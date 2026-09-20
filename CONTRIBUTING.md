@@ -40,20 +40,19 @@ python main.py
 ### 目录结构
 
 ```
-IndusFuzz/                 # 项目根（README、LICENSE、一键脚本）
-├── src/                   # 核心代码
-│   ├── src/
-│   │   ├── core/          # 核心模块（menu、fuzz_loop、report_generator 等）
-│   │   ├── protocols/     # 协议插件（registry + 各协议 client/mutator/llm_mutator）
-│   │   └── integrations/  # MCP 集成
-│   ├── server/            # 各协议模拟从站
-│   ├── config/            # 配置包（connect_templates.yaml）
-│   ├── tools/             # check_protocol.py 等工具
-│   ├── tests/             # 验证脚本与单元测试
-│   ├── docs/              # PRD 文档
-│   └── main.py            # 入口
-├── agentscope_env/        # 开发用虚拟环境（不打包）
-└── IndusFuzz-v1.8.1-win64/  # 发布产物（不提交）
+IndusFuzz/                 # 项目根（扁平结构，所有文件直接在此）
+├── src/                   # 核心代码（core/ + protocols/ + integrations/）
+├── server/                # 各协议模拟从站
+├── config/                # 配置（connect_templates.yaml）
+├── tools/                 # check_protocol.py / verify/ / legacy/ 等
+├── tests/                 # conftest + helpers + 4 test_*.py（147 用例）
+├── assets/                # fonts/ + concept_a_hex/ 图标
+├── docs/                  # PRD 文档
+├── main.py                # 入口
+├── .github/workflows/     # CI/CD（test.yml + release.yml）
+├── pytest.ini / requirements.txt / requirements-test.txt / bandit_config.yml / .pre-commit-config.yaml
+├── build.ps1 / 一键打包.bat / run_all_tests.py / run_tests.bat / start_fuzz.bat
+└── agentscope_env/        # 开发用虚拟环境（不提交、不打包）
 ```
 
 ## 测试运行

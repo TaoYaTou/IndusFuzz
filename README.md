@@ -101,7 +101,8 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
-| v1.8.1 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done (current) |
+| v1.8.2 | Windows CI runner, auto release notes, build artifacts cleanup, black 24.10.0, mcp dep | Done (current) |
+| v1.8.1 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done |
 | v2.0.0 | Cross-platform (macOS/Linux), desktop app, NVD/CNVD comparison | Future |
 
 ---
@@ -190,7 +191,7 @@ python main.py
 
 ### EXE installation (recommended for end users)
 
-**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.1-win64\IndusFuzz.exe`).
+**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.2-win64\IndusFuzz.exe`).
 
 ### Verify the installation
 
@@ -529,62 +530,41 @@ IndusFuzz/
 ├── main.py                      # Entry: banner, environment check, wizard, start slave, fuzzing
 ├── requirements.txt             # Python dependencies
 ├── start_fuzz.bat               # One-click launch script
-├── CHANGELOG.md                 # Release history
-├── IndusFuzz.spec               # PyInstaller spec for EXE packaging (current)
+├── CHANGELOG.md                 # Release history (bilingual)
+├── IndusFuzz.spec               # PyInstaller spec for EXE packaging
 ├── version_info.txt             # Version metadata for the packaged EXE
 ├── verify_build.py              # Build verification script
-├── build.bat                    # Package / build script
+├── build.ps1 / build.bat        # Packaging scripts (PowerShell + batch)
+├── 一键打包.bat                  # Windows one-click packaging entry
 ├── make_release.bat             # Release package assembly script
-├── build/                       # PyInstaller intermediate build output
-├── dist/                        # PyInstaller output (IndusFuzz.exe)
+├── run_all_tests.py             # 6-stage test orchestrator (with Chinese HTML report)
+├── run_tests.bat                # One-click test entry
+├── start_fuzz.bat               # One-click launch script
+├── pytest.ini                   # pytest configuration
+├── requirements.txt             # Runtime dependencies (pywin32 with Windows env marker)
+├── requirements-test.txt        # Test dependencies (pytest-cov / bandit / flake8 / black)
+├── bandit_config.yml            # Bandit security scan configuration
+├── .pre-commit-config.yaml      # pre-commit hooks (black 24.10.0 + flake8 + bandit)
+├── .github/workflows/           # CI/CD (test.yml: push/PR → pytest+lint+bandit; release.yml: tag v* → PyInstaller→ZIP→GitHub Release with auto notes)
+├── clean_cache.ps1              # Packaging cache cleanup
 ├── assets/
 │   ├── fonts/simhei.ttf         # Chinese font for PDF rendering
-│   └── concept_a_hex/           # App logo icons (icon_128/256/512.png, icon.ico, icon.svg...)
+│   └── concept_a_hex/           # App logo icons
 ├── src/
-│   ├── core/
-│   │   ├── version.py           # Single source of truth for the version number
-│   │   ├── menu.py              # 6-step interactive wizard
-│   │   ├── fuzz_loop_llm.py     # Fuzz orchestration, LLM precheck, timeout circuit breaker, error report
-│   │   ├── llm_precheck.py      # LLM connectivity precheck + protocol timeout circuit breaker
-│   │   ├── llm_status.py        # Per-protocol LLM call status collection
-│   │   ├── report_generator.py  # HTML/PDF/LOG report generation
-│   │   ├── result_analyzer.py   # Result statistics
-│   │   ├── slave_launcher.py    # Start/stop mock slave in background
-│   │   ├── diagnose.py          # Connectivity diagnosis
-│   │   ├── security.py          # Windows DPAPI encrypted storage of API key
-│   │   ├── runtime_config.py    # Global runtime switches (e.g. GPU)
-│   │   ├── gpu_detector.py      # GPU detection (nvidia-smi / torch)
-│   │   └── color_output.py      # ANSI color output with Windows VT fallback
-│   ├── protocols/               # Protocol plugins
-│   │   ├── registry.py          # Plugin registry
-│   │   ├── base.py              # ProtocolBase abstract base class
-│   │   ├── llm_mutator_base.py  # Shared LLM mutation base (timeout/retry/error-classification/length-check/None-guard)
-│   │   ├── func_codes/*.json    # Function-code definitions per protocol (7 files)
-│   │   └── {modbus,s7comm,dnp3,iec104,iec61850,enip,opcua}/
-│   │       ├── __init__.py      # register_protocol
-│   │       ├── client.py        # Client, packet construction, classification, run_fuzz
-│   │       ├── mutator.py       # Local deterministic mutation
-│   │       └── llm_mutator.py   # LLM mutation thin shell (delegates to llm_mutator_base)
-│   │       (modbus additionally has modbus_tools.py for scapy-based Modbus request construction)
-│   └── integrations/            # MCP integrations (stub files under development)
-│       ├── vulnclaw_mcp.py
-│       ├── codeguard_mcp.py
-│       └── codeinspectus_mcp.py
-├── config/
-│   ├── __init__.py
-│   └── connect_templates.yaml   # Real-device connection parameter templates (7 protocols, mirrors menu.py PROTOCOL_CONNECT_PARAMS)
-├── server/                      # Mock slaves for all 7 protocols (*_server.py, support --host --port --strict)
+│   ├── core/version.py          # Single source of truth for version (git describe → env → HARDCODED three-source)
+│   ├── core/*.py                # menu / fuzz_loop_llm / report_generator / security + 7 more
+│   ├── protocols/               # 7 protocols (modbus/s7comm/dnp3/iec104/iec61850/enip/opcua) + registry + base + llm_mutator_base + func_codes/*.json
+│   └── integrations/            # MCP integrations (codeguard / codeinspectus / vulnclaw)
+├── config/                      # connect_templates.yaml
+├── server/                      # 7 protocol mock slaves (*_server.py, supports --host --port --strict)
 ├── tools/
+│   ├── verify/                  # 8 verification scripts
+│   ├── legacy/                  # 2 legacy helpers
 │   ├── check_protocol.py        # Protocol integrity self-check
-│   └── clean_before_release.py  # Clean temp/report files before release
-├── tests/
-│   ├── verify_*.py              # Verification scripts (fuzz_flow, phase7_static, strict_wiring, gpu, etc.)
-│   ├── test_*.py                # Unit tests (mutator, reporter, tools)
-│   ├── fuzz_loop.py             # Fuzz loop test entry
-│   └── legacy/                  # Legacy test scripts
-├── docs/                        # PRD documents (protocol extension, audit, audit-fix summary; 3 files)
-└── reports/                     # Generated reports
-```
+│   └── clean_before_release.py  # Pre-release cleanup
+├── tests/                       # conftest + helpers + 4 test_*.py (147 pytest cases)
+├── docs/                        # PRD documents
+└── reports/                     # Generated reports``
 
 ---
 
