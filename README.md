@@ -101,7 +101,8 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
-| v1.8.2 | Windows CI runner, auto release notes, build artifacts cleanup, black 24.10.0, mcp dep | Done (current) |
+| v1.8.3 | Version fallback consistency fix (build.ps1/make_release/start_fuzz/version_info.txt), README/CONTRIBUTING flat structure sync, automated version compliance audit | Done (current) |
+| v1.8.2 | Windows CI runner, auto release notes, build artifacts cleanup, black 24.10.0, mcp dep | Done |
 | v1.8.1 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done |
 | v2.0.0 | Cross-platform (macOS/Linux), desktop app, NVD/CNVD comparison | Future |
 
@@ -191,7 +192,7 @@ python main.py
 
 ### EXE installation (recommended for end users)
 
-**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.2-win64\IndusFuzz.exe`).
+**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.3-win64\IndusFuzz.exe`).
 
 ### Verify the installation
 

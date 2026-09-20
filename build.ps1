@@ -1,4 +1,4 @@
-﻿# IndusFuzz 一键打包脚本
+# IndusFuzz 一键打包脚本
 # 用法: powershell -ExecutionPolicy Bypass -File build.ps1
 
 $ErrorActionPreference = "Stop"
