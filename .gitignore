@@ -49,3 +49,10 @@ desktop.ini
 .coverage
 coverage_html/
 htmlcov/
+# ===== 构建产物（CI release workflow 清理）=====
+dist/
+build/
+IndusFuzz-v*/
+IndusFuzz-Desktop-v*/
+*.zip
+*.spec.bak

@@ -55,24 +55,6 @@ jobs:
           Write-Output "ZIP created: $zipName"
           Get-Item $zipName | Select-Object Name, Length, LastWriteTime
 
-      - name: Extract CHANGELOG for release notes
-        id: changelog
-        run: |
-          $tag = $env:GITHUB_REF_NAME
-          $version = $tag -replace '^v', ''
-          $content = Get-Content "CHANGELOG.md" -Raw
-          $pattern = "(?s)## \[$version\].*?(?=## \[|$)"
-          $match = [regex]::Match($content, $pattern)
-          if ($match.Success) {
-            $notes = $match.Value.Trim()
-          } else {
-            $notes = "Release $tag — see CHANGELOG.md for details."
-          }
-          $notes | Out-File -Encoding utf8 release_notes.txt
-          Write-Output "notes<<EOF" >> $env:GITHUB_OUTPUT
-          Get-Content release_notes.txt >> $env:GITHUB_OUTPUT
-          Write-Output "EOF" >> $env:GITHUB_OUTPUT
-
       - name: Determine prerelease flag
         id: prerelease
         run: |
@@ -93,9 +75,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: "IndusFuzz ${{ github.ref_name }}"
-          body_path: release_notes.txt
           files: |
             dist/IndusFuzz.exe
             IndusFuzz-Desktop-*-win64.zip
           prerelease: ${{ steps.prerelease.outputs.prerelease }}
-          generate_release_notes: false
+          generate_release_notes: true

@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to IndusFuzz are documented in this file.
 
@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.8.2] - 2026-09-20
+
+### Added / 新增
+
+- mcp>=1.0.0 to requirements.txt — CI Windows runner needs it for MCP integration tests
+  — requirements.txt 加入 mcp>=1.0.0，CI Windows runner 需要它来跑 MCP 集成测试
+- .gitignore: dist/, build/, IndusFuzz-v*/, *.zip, *.spec.bak — build artifacts excluded from git index, local files preserved
+  — .gitignore 新增 dist/, build/, IndusFuzz-v*/, *.zip, *.spec.bak：构建产物不再入库，本地保留
+
+### Changed / 变更
+
+- test.yml: runs-on changed from ubuntu-latest to windows-latest — project is Windows-only (pywin32, DPAPI)
+  — test.yml: runs-on 从 ubuntu-latest 改为 windows-latest，项目依赖 Windows 专属库（pywin32, DPAPI）
+- test.yml: black pinned to 24.10.0, flake8 args aligned with pre-commit
+  — test.yml: black 锁定 24.10.0 版本，flake8 参数与 pre-commit 完全对齐
+- release.yml: body_path removed, generate_release_notes: true — GitHub auto-generates per-tag release notes, removed hand-written CHANGELOG extractor step
+  — release.yml: 删除 body_path，改用 generate_release_notes: true，GitHub 自动按 tag 生成 release notes，同时移除了手写的 CHANGELOG 抽取步骤
+- pywin32==311 marked as Windows-only with sys_platform env marker
+  — pywin32 加入 sys_platform == "win32" 环境标记，跨平台安全
+
+### Fixed / 修复
+
+- 18 files in tests/ and tools/ formatted with black 24.10.0
+  — tests/ 和 tools/ 下 18 个文件用 black 24.10.0 格式化
+
+### Removed / 移除
+
+- build/ dist/ IndusFuzz-v*-win64/ *.zip removed from git index (--cached), local files preserved
+  — build/ dist/ IndusFuzz-v*-win64/ *.zip 从 git 索引移除（--cached），本地文件保留
 ## [1.8.1] - 2026-09-20
 
 ### Added / 新增
