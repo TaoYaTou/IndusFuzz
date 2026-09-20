@@ -1,4 +1,4 @@
-# IndusFuzz 全生命周期规则 v5（2026-09-21 固化，含 20 条经验教训）
+﻿# IndusFuzz 全生命周期规则 v5（2026-09-21 固化，含 20 条经验教训）
 
 ## 🚨 经验教训速查表（红线，每条都踩过或验证过）
 
@@ -24,6 +24,7 @@
 | **L18** | **新增协议 client.connect 无协议层校验** — 只做 TCP 连接就算成功 | 本会话 2026-09-20 | P1-1/P2-1 |
 | **L19** | **spec hiddenimports 漏新模块** — PyInstaller 运行时 ImportError | 本会话 2026-09-20 | P3-2 |
 | **L20** | **func_codes JSON 漏新协议** — audit 5.15 dim5 发现 JSON 字段不全 | 本会话 2026-09-20 | P1-2 |
+| **L21** | **组装/文档时凭空写文件名不核实磁盘** — P3-3 凭空写 config/protocols.json（实际只有 connect_templates.yaml），违反 P1-3c | 本会话 2026-09-21 | P1-3c/P3-3 |
 
 ---
 
@@ -319,3 +320,4 @@ IndusFuzz/                              ← 项目根
 | 2026-09-20 | 审计只扫 src/ 不扫 tests/ | L7 | P2-1 audit 全量 |
 | 2026-09-20 | S7comm/IEC61850 server 半成品缺 COTP/S7 Setup 响应 | L17 | P1-1 业务层状态机 |
 | 2026-09-20 | PyInstaller spec hiddenimports 漏 modbus_tools.py | L19 | P3-2 spec 检查 |
+| 2026-09-21 | P3-3 组装时凭空写 config/protocols.json（实际只有 connect_templates.yaml），违反 P1-3c | L21 | P1-3c 内容核实真实文件 + P3-3 组装前 Glob |
