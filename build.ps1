@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 # 路径配置
-# FLAT MIGRATION (v1.8.1): all project files live directly at $ProjectRoot.
+# FLAT MIGRATION (v1.8.3): all project files live directly at $ProjectRoot.
 # Previously everything was under fuzz_agent/ — that subdir is now empty.
 $ProjectRoot = $PSScriptRoot
 $FuzzDir = $ProjectRoot
@@ -132,7 +132,7 @@ try {
     $releasePath = Join-Path $ProjectRoot $ReleaseDir
     New-Item $releasePath -ItemType Directory -Force | Out-Null
     Copy-Item $exePath $releasePath -Force
-    # All docs are now at project root (flat migration v1.8.1)
+    # All docs are now at project root (flat migration v1.8.3)
     foreach ($f in @("README.md","README.zh.md")) {
         $src = Join-Path $ProjectRoot $f
         if (Test-Path $src) { Copy-Item $src $releasePath -Force }

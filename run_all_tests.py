@@ -23,7 +23,7 @@ import shutil
 # 所以先取当前脚本位置，再推导 ROOT 和 FUZZ_ROOT
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# FLAT MIGRATION (v1.8.1): all project files live at root now.
+# FLAT MIGRATION (v1.8.3): all project files live at root now.
 # Previously src/ was under fuzz_agent/src/ — now it's at root/src/.
 ROOT = _SCRIPT_DIR
 FUZZ_ROOT = ROOT

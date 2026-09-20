@@ -52,7 +52,7 @@ cfg_keys = sorted(report_generator.PROTOCOL_CONFIG.keys())
 check("7.5 PROTOCOL_CONFIG 条目数", "7", str(len(cfg_keys)))
 check("7.5 PROTOCOL_CONFIG 覆盖", "dnp3,enip,iec104,iec61850,modbus,opcua,s7comm", ",".join(cfg_keys))
 
-# v1.7.1 重构后 timeout=25 收敛至 llm_mutator_base.py，7 个协议 llm_mutator.py 为薄壳继承基类
+# v1.8.3 重构后 timeout=25 收敛至 llm_mutator_base.py，7 个协议 llm_mutator.py 为薄壳继承基类
 base_path = os.path.join(FUZZ_AGENT, "src", "protocols", "llm_mutator_base.py")
 base_ok = False
 if os.path.exists(base_path):

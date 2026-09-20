@@ -3,7 +3,7 @@ import sys
 import re
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-# FLAT MIGRATION (v1.8.1): scripts used to live under fuzz_agent/tools/verify/
+# FLAT MIGRATION (v1.8.3): scripts used to live under fuzz_agent/tools/verify/
 # now they live at tools/verify/, so root is two levels up.
 FUZZ_AGENT = os.path.dirname(os.path.dirname(_HERE))
 sys.path.insert(0, FUZZ_AGENT)

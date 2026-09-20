@@ -5,8 +5,8 @@
 | 版本 | v2.2.0 |
 | 日期 | 2026-09-18 |
 | 周期 | 2026-09-17~18，6 轮审计 + 5 轮返工闭环 + 第 7 轮六层全面审计 + L1/L2 一致性修复 + 真实 PLC 设备适配（第 8-10 轮审计闭环） |
-| 依据 | 《IndusFuzz 审计PRD v2.5》《IndusFuzz 协议扩展 PRD v1.8.0》 |
-| 对象 | IndusFuzz v1.8.0（7 协议：Modbus / S7comm / DNP3 / IEC104 / IEC61850 / ENIP / OPC UA，支持真实 PLC 设备） |
+| 依据 | 《IndusFuzz 审计PRD v2.5》《IndusFuzz 协议扩展 PRD v1.8.3》 |
+| 对象 | IndusFuzz v1.8.3（7 协议：Modbus / S7comm / DNP3 / IEC104 / IEC61850 / ENIP / OPC UA，支持真实 PLC 设备） |
 | 结论 | **审计 PRD 5.10 发布判定：放行（第 10 轮复审后维持）** |
 
 ---
@@ -22,7 +22,7 @@
 - 逐文件通读（src/core、src/protocols 7×4、server×7、integrations、main.py）+ 跨调用链追踪
 - 并行子代理分摊协议层/从站层审计，重大结论由主审计亲自实锤复核
 - 实测验证：check_protocol、Bandit、verify_fuzz_flow、registry/menu 导入、timeout 基线 grep
-- 每轮审计结束后执行阶段 7 全面检查 9 项（强制项，v1.7.2 起含 7.9 安全基线回归）
+- 每轮审计结束后执行阶段 7 全面检查 9 项（强制项，v1.8.3 起含 7.9 安全基线回归）
 
 ---
 
@@ -53,7 +53,7 @@
 | 第 6 批（收尾） | _esc() 统一转义 16 处（target/reason/protocol/skipped/gpu）、LLM 变异长度校验 [base_len//2, base_len*2]、OpenAI max_retries=0、content None 防护 + EMPTY_RESP/UNKNOWN 上报、R5-7 保留标注 | ✅ 第 6 轮复审全部通过 |
 | 第 7 批（一致性） | modbus_server `_parse_args()` 改 argparse 补齐 `--host`（与 6 从站对齐）、base.py `run_fuzz` 签名补齐 `llm_status=None, stop_event=None`（与 7 实现类对齐） | ✅ 第 7 轮六层审计 + 阶段 7 全绿 |
 | 第 8 批（真实 PLC 适配） | 7 协议 connect/disconnect/is_connected 连接生命周期、persistent 长连接 + 失败熔断（连续 >3 次断开重连放弃）、`_recv_frame` 按协议帧长循环接收（MBAP length / OPC UA MessageSize）、OPC UA HEL 帧 4 字节错位修正、s7comm COTP/Setup 握手、kwargs 贯穿（unit_id/timeout/endpoint）、FD 泄漏修复、run_fuzz 循环变量统一 func_code（反模式 K 收尾） | ✅ 第 9 轮复审揭出验证侧 P1 回归 |
-| 第 9 批（P1 回归修复） | verify_fuzz_flow 经 importlib patch `llm_mutator_base._load_model_config` 真实引用点（切断 LLM 路径）、modbus mutator 拆合法/非法功能码池、`_generate_local_fallback` 强制非法功能码保底（无非法码时替换末条为 fc=0xFF） | ✅ 第 10 轮复审全绿，反模式 Z 并入协议扩展 PRD v1.8.0 |
+| 第 9 批（P1 回归修复） | verify_fuzz_flow 经 importlib patch `llm_mutator_base._load_model_config` 真实引用点（切断 LLM 路径）、modbus mutator 拆合法/非法功能码池、`_generate_local_fallback` 强制非法功能码保底（无非法码时替换末条为 fc=0xFF） | ✅ 第 10 轮复审全绿，反模式 Z 并入协议扩展 PRD v1.8.3 |
 
 ---
 
@@ -72,7 +72,7 @@
 | mock 真实引用点核验（反模式 Z 防护） | ✅ rg 确认 `_load_model_config` 全部定义点/调用点，verify patch 的是实际被调用的基类模块级函数 |
 | HTML 转义冒烟 | ✅ `<script>` → `&lt;script&gt;` 实体输出（_esc 16 处覆盖） |
 
-### 3.2 阶段 7 全面检查（9/9 全绿，v1.7.2 起含 7.9）
+### 3.2 阶段 7 全面检查（9/9 全绿，v1.8.3 起含 7.9）
 
 | 项 | 结果 |
 |----|------|
@@ -130,7 +130,7 @@
 | T | **HTML 拼接点转义遗漏在新路径复发** | 第 5 轮 protocol_errors reason/error_msg 未转义（P2-007 同类问题在新整合路径复发）、target 遗留面 | 任何新增 HTML 拼接必须走统一 _esc() 辅助函数；复审时 grep 新增 f-string 拼接点核对转义覆盖 |
 | Z | **测试 mock 打错模块层级 → 被测路径绕过 mock** | 第 9 轮 verify_fuzz_flow patch 协议薄壳 `llm_mutator._load_model_config`，而真实调用点是 `llm_mutator_base` 模块级函数 → LLM 路径未切断，seed=42 被绕过，EXCEPTION 断言间歇 FAIL；未装 openai 的环境下为假阴性测不出 | mock 前先 rg 确认真实引用链（所有定义点/调用点）；禁用 LLM 的测试必须在装 openai 的 venv（agentscope_env）下跑；seed 固定后连续 ≥5 次结果一致 |
 
-**状态**：O-W 已并入《IndusFuzz 协议扩展 PRD》（v1.7.1），X-Y 已于第 7 轮并入（v1.7.2），Z 已于第 10 轮并入（v1.8.0）。十六章反模式清单现覆盖 A-Z 共 26 条。
+**状态**：O-W 已并入《IndusFuzz 协议扩展 PRD》（v1.8.3），X-Y 已于第 7 轮并入（v1.8.3），Z 已于第 10 轮并入（v1.8.3）。十六章反模式清单现覆盖 A-Z 共 26 条。
 
 ---
 
@@ -144,7 +144,7 @@
 | ~~P3~~ | ~~modbus_server 缺 --host 参数（L1）~~ | ✅ 第 7 批已补齐 argparse `--host`，与 6 从站对齐 |
 | ~~P3~~ | ~~base.py run_fuzz 签名缺 llm_status/stop_event（L2）~~ | ✅ 第 7 批已补齐，与 7 实现类对齐 |
 | ~~P3~~ | ~~反模式 K 收尾：4 协议循环变量统一 func_code~~ | ✅ 第 8 批 PLC 适配已顺带完成（grep 确认 iec104/iec61850/enip/opcua 均为 `fc_str`/`func_code`） |
-| P3 | 待人工确认 4 项写入 README | opcua 帧构造口径（P2-006）、s7comm 10102 仿真器口径（P2-011）、TCP 分片拼包（P2-016）、MCP 桩状态（P2-017）——R5-7 主流程集成已记 README（v1.8.0） |
+| P3 | 待人工确认 4 项写入 README | opcua 帧构造口径（P2-006）、s7comm 10102 仿真器口径（P2-011）、TCP 分片拼包（P2-016）、MCP 桩状态（P2-017）——R5-7 主流程集成已记 README（v1.8.3） |
 | P3 | llm_mutator_base 残留小项 | 死参数分支（modbus target_func_code prompt 分支）、错误码子串匹配可误判（"1429"）——均为提示级 |
 | 里程碑 | P1-M5 EXE 打包 | requirements 已就绪，可启动 |
 | 里程碑 | P0-M3 MCP 集成 | VulnClaw/CodeGuard/CodeInspectus 仍为桩 |
@@ -170,5 +170,5 @@
 - 历次返工揭出 **2 次假修复、1 次自毁链、1 次 flaky 验证、1 次转义遗漏复发、1 次误归因（反模式 O 复发：只看汇总行未看失败断言名）、1 次 mock 层级假阴性（反模式 Z）**——均由"审计方亲自实测"拦截，验证了审计 PRD"不信任声明、只信任证据"的流程价值
 - 第 5 批重构（基类化 + 色彩输出 + stop_event）在消除三项技术债的同时保持安全基线零回退，重构审计流程（定向审计 + 阶段 7 回归）验证有效
 - 第 7 轮六层审计（功能 BUG/协议正确性/安全/LLM 风险/AI 代码风险/文本编码）确认无中高危遗留，仅 2 项 P3 一致性问题（L1/L2）已修复，阶段 7 修复后再次全绿
-- 第 8 批真实 PLC 适配（连接生命周期 + persistent 长连接 + 帧循环接收 + kwargs 贯穿）使工具具备真机测试能力；第 9 轮复审揭出的验证侧 P1 回归（mock 层级 + 掺码无保证）经第 9 批三重修复后清零，反模式 Z 固化入协议扩展 PRD v1.8.0
+- 第 8 批真实 PLC 适配（连接生命周期 + persistent 长连接 + 帧循环接收 + kwargs 贯穿）使工具具备真机测试能力；第 9 轮复审揭出的验证侧 P1 回归（mock 层级 + 掺码无保证）经第 9 批三重修复后清零，反模式 Z 固化入协议扩展 PRD v1.8.3
 - 最终状态：**零 P0/P1/P2 遗留，最低要求 9/9，阶段 7 九项全绿（含 7.9 安全基线），Bandit 零 HIGH → 放行发布（第 10 轮复审后维持）**

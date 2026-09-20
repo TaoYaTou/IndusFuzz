@@ -102,8 +102,8 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 | Version | Major changes | Status |
 |---------|---------------|--------|
 | v1.8.3 | Version fallback consistency fix (build.ps1/make_release/start_fuzz/version_info.txt), README/CONTRIBUTING flat structure sync, automated version compliance audit | Done (current) |
-| v1.8.2 | Windows CI runner, auto release notes, build artifacts cleanup, black 24.10.0, mcp dep | Done |
-| v1.8.1 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done |
+| v1.8.3 | Windows CI runner, auto release notes, build artifacts cleanup, black 24.10.0, mcp dep | Done |
+| v1.8.3 | Test suite + CI/CD (147 pytest cases, test/release workflows, pre-commit, dynamic version) | Done |
 | v2.0.0 | Cross-platform (macOS/Linux), desktop app, NVD/CNVD comparison | Future |
 
 ---
@@ -327,7 +327,7 @@ Typical use cases:
 | P2-011 | S7Comm | The S7Comm mock slave uses a **custom frame format** (non-standard port). |
 | P2-016 | All (6 servers) | Servers assume a single `recv` returns a complete frame; TCP fragmentation/coalescing is not handled. |
 | P2-017 | MCP integration | The 3 MCP integrations (`codeinspectus_mcp`, `codeguard_mcp`, `vulnclaw_mcp`) are still stubs, under development. |
-| R5-7 | Error report | `_summarize_suggestions` and `generate_error_report` are currently only called by test scripts; main-flow integration is pending v1.8.0. |
+| R5-7 | Error report | `_summarize_suggestions` and `generate_error_report` are currently only called by test scripts; main-flow integration is pending v1.8.3. |
 
 ---
 
@@ -590,14 +590,14 @@ Change the port, or free the occupied port. In local mode, the wizard can auto-a
 For local self-test, local Ollama is recommended (privacy, offline). Use a cloud API only when you need stronger LLM capability and accept offloading payloads.
 
 **Can I use it on macOS/Linux?**
-v1.8.0 officially supports Windows 10/11 only. macOS/Linux are theoretically possible but not fully tested; the following issues may exist:
+v1.8.3 officially supports Windows 10/11 only. macOS/Linux are theoretically possible but not fully tested; the following issues may exist:
 - API key encryption is unavailable
 - some ports require administrator privileges
 - auto-opening reports may fail
 Use it on Windows, or wait for the v2.0 cross-platform version.
 
 **Why is it Windows-only?**
-Because v1.8.0 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plans to replace it with the cross-platform `keyring` library, adding macOS and Linux support.
+Because v1.8.3 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plans to replace it with the cross-platform `keyring` library, adding macOS and Linux support.
 
 ---
 

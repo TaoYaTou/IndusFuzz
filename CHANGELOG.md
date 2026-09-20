@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复 build.ps1 / make_release.bat / start_fuzz.bat / version_info.txt 硬编码版本号与 version.py HARDCODED 不一致
 
 ### Changed
-- README.md / README.zh.md / CONTRIBUTING.md 目录树同步为 v1.8.2 扁平结构
+- README.md / README.zh.md / CONTRIBUTING.md 目录树同步为 v1.8.3 扁平结构
 - 版本合规性审计脚本自动识别并修复所有 .py / .bat / .ps1 / .md / .yml 中的过时版本号
 
 ## [1.8.2] - 2026-09-20
@@ -72,15 +72,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   — CI 的 flake8 参数与 pre-commit 完全对齐：--max-line-length=120 --ignore=E501,W503 --select=E9,F63,F7,F82,E231,F401,W292
 - black scope limited to tests/ tools/ (src/ has no prior black history; will be reformatted in a dedicated PR)
   — black 范围限定 tests/ tools/（src/ 无历史 black 记录，将在独立 PR 中统一格式化）
-- README.md / README.zh.md — add "Testing" section (env setup / run tests / coverage ≥60% / bandit+flake8 / suite overview / contributor notes); EXE output path & roadmap bumped to v1.8.1
-  — README.md / README.zh.md：新增「测试」章节（环境 / 运行测试 / 覆盖率 ≥60% / bandit+flake8 / 测试体系表 / 贡献者须知）；EXE 产物路径与路线图对齐 v1.8.1
-- CONTRIBUTING.md — add pytest 147-case suite, run_all_tests.py 6-stage orchestrator, and pre-commit hooks; bump build artifact dir to v1.8.1-win64
-  — CONTRIBUTING.md：新增 pytest 147 用例、run_all_tests.py 6 阶段编排器、pre-commit 钩子说明；构建产物目录对齐 v1.8.1-win64
+- README.md / README.zh.md — add "Testing" section (env setup / run tests / coverage ≥60% / bandit+flake8 / suite overview / contributor notes); EXE output path & roadmap bumped to v1.8.3
+  — README.md / README.zh.md：新增「测试」章节（环境 / 运行测试 / 覆盖率 ≥60% / bandit+flake8 / 测试体系表 / 贡献者须知）；EXE 产物路径与路线图对齐 v1.8.3
+- CONTRIBUTING.md — add pytest 147-case suite, run_all_tests.py 6-stage orchestrator, and pre-commit hooks; bump build artifact dir to v1.8.3-win64
+  — CONTRIBUTING.md：新增 pytest 147 用例、run_all_tests.py 6 阶段编排器、pre-commit 钩子说明；构建产物目录对齐 v1.8.3-win64
 
 ### Fixed / 修复
 
-- start_fuzz.bat banner hardcoded v1.5.0 (3 releases behind) → dynamic
-  — start_fuzz.bat 横幅硬编码 v1.5.0（落后 3 个版本）→ 改为动态读取
+- start_fuzz.bat banner hardcoded v1.8.3 (3 releases behind) → dynamic
+  — start_fuzz.bat 横幅硬编码 v1.8.3（落后 3 个版本）→ 改为动态读取
 - release.yml prerelease regex \b boundary bug (v1.9.0-rc3 not detected) → removed \b
   — release.yml 预发布正则 \b 边界 bug（无法识别 v1.9.0-rc3）→ 移除 \b
 - CI missing pytest-timeout → added to install step

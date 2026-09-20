@@ -25,7 +25,7 @@ IndusFuzz 协议扩展 PRD（架构重构版 v2.0）
 | 可维护性 | 不引入反模式 A-Z 新变种 | 阶段 7.8 |
 | 一致性 | func_codes -> client -> mutator -> server -> report_generator 五处数量一致 | 阶段 5.2 + 十七章 |
 
-二、v1.6.0 五项架构改进
+二、v1.8.3 五项架构改进
 #	改进	目标
 1	统一接口替代 if-elif 分支	新增协议只需在 client.py 实现 run_fuzz，fuzz_loop_llm.py 无需改动
 2	报告配置集中化	所有协议配置合并到 PROTOCOL_CONFIG 一处维护
@@ -463,7 +463,7 @@ def classify_severity(func_code, classification, response_hex, protocol_name="mo
     return "medium", "medium", "unclassified", ""
 5.4 集中配置文件编辑守则
 #### 为什么需要守则
-v1.6.0 实施时曾出现一个典型事故：对 report_generator.py 做了两次 Edit，第一次新增 `_get_func_name`（新版，用 PROTOCOL_CONFIG），第二次只改了调用方引用但漏掉删掉旧版 `_get_func_name`（硬编码 PROTOCOL_FUNC_MAPS），导致文件里**两个同名函数共存**、Python 以后定义的为准、旧的变成死代码。结果 `classify_severity` 走的是新 helper，但 `_get_func_name` 却落到旧实现上——旧的字典 `PROTOCOL_FUNC_MAPS` 已被删除，NameError。
+v1.8.3 实施时曾出现一个典型事故：对 report_generator.py 做了两次 Edit，第一次新增 `_get_func_name`（新版，用 PROTOCOL_CONFIG），第二次只改了调用方引用但漏掉删掉旧版 `_get_func_name`（硬编码 PROTOCOL_FUNC_MAPS），导致文件里**两个同名函数共存**、Python 以后定义的为准、旧的变成死代码。结果 `classify_severity` 走的是新 helper，但 `_get_func_name` 却落到旧实现上——旧的字典 `PROTOCOL_FUNC_MAPS` 已被删除，NameError。
 
 #### 三条核心守则
 **守则 1：改配置结构时，先删旧字典再写新字典**
@@ -1232,15 +1232,15 @@ python main.py
 依赖	尽量用标准库
 十四、版本规划
 版本	主要变更	状态
-v1.5.0	Modbus + S7Comm，if-elif 分支	✅ 已完成
-v1.6.0	架构重构（5 项改进）	✅ 已完成（2026-09-16）
-v1.6.1	DNP3 接入 + 反模式 E-H + 十七/十八章（多位置一致性清单 + Checklist）	✅ 已完成（2026-09-16）
-v1.6.2	IEC 60870-5-104 接入 + 反模式 I	✅ 已完成（2026-09-16）
-v1.6.3	IEC 61850 MMS 接入 + 反模式 J	✅ 已完成（2026-09-16）
-v1.7.0	7 协议全量 + ENIP/OPC UA + 反模式 K-N + LLMStatus/security/DPAPI	✅ 已完成
-v1.7.1	llm_mutator 基类化重构 + color_output + stop_event + 反模式 O-W（6 轮审计全闭环）	✅ 已完成（2026-09-17）
-v1.7.2	第 7 轮六层审计 + L1/L2 一致性修复 + 反模式 X-Y（从站 CLI 接口统一、基类签名对齐）	✅ 已完成（2026-09-18）
-v1.8.0	真实 PLC 设备适配（connect/disconnect/is_connected 连接生命周期、persistent 长连接+失败熔断、_recv_frame 帧循环接收、kwargs 贯穿）+ 第 8-10 轮审计闭环 + 反模式 Z（测试 mock 打错模块层级）+ 反模式 K 收尾（4 协议循环变量统一 func_code）	✅ 已完成（2026-09-18）
+v1.8.3	Modbus + S7Comm，if-elif 分支	✅ 已完成
+v1.8.3	架构重构（5 项改进）	✅ 已完成（2026-09-16）
+v1.8.3	DNP3 接入 + 反模式 E-H + 十七/十八章（多位置一致性清单 + Checklist）	✅ 已完成（2026-09-16）
+v1.8.3	IEC 60870-5-104 接入 + 反模式 I	✅ 已完成（2026-09-16）
+v1.8.3	IEC 61850 MMS 接入 + 反模式 J	✅ 已完成（2026-09-16）
+v1.8.3	7 协议全量 + ENIP/OPC UA + 反模式 K-N + LLMStatus/security/DPAPI	✅ 已完成
+v1.8.3	llm_mutator 基类化重构 + color_output + stop_event + 反模式 O-W（6 轮审计全闭环）	✅ 已完成（2026-09-17）
+v1.8.3	第 7 轮六层审计 + L1/L2 一致性修复 + 反模式 X-Y（从站 CLI 接口统一、基类签名对齐）	✅ 已完成（2026-09-18）
+v1.8.3	真实 PLC 设备适配（connect/disconnect/is_connected 连接生命周期、persistent 长连接+失败熔断、_recv_frame 帧循环接收、kwargs 贯穿）+ 第 8-10 轮审计闭环 + 反模式 Z（测试 mock 打错模块层级）+ 反模式 K 收尾（4 协议循环变量统一 func_code）	✅ 已完成（2026-09-18）
 v2.0.0	真实设备支持纳入扩展标准（9 方法接口 + 11 步流程 + 17 项清单 + menu.py PROTOCOL_CONNECT_PARAMS + README 真机指南）	✅ 已完成（2026-09-18）
 v2.1.0	桌面端（Tauri / PyQt）+ 多协议并行	📋 规划中
 十五、附录：常见问题
@@ -1276,7 +1276,7 @@ slave_note 缺失 → 不显示模拟从站提示
 运行 python tools/check_protocol.py <name> 可检测出缺失项。
 
 Q7：报告生成时 NameError: name 'PROTOCOL_FUNC_MAPS' is not defined？
-这是 v1.6.0 重构时的典型残留 bug：旧字典已经删了但还有引用没清。按以下步骤排查：
+这是 v1.8.3 重构时的典型残留 bug：旧字典已经删了但还有引用没清。按以下步骤排查：
 
 1. 全文搜索旧字典名（rg "PROTOCOL_FUNC_MAPS" 或 rg "PROTOCOL_DISPLAY_NAME"）
 2. 全文搜索重复函数定义（rg "^def _get_func_name" 看是否出现两次以上）
@@ -1292,7 +1292,7 @@ Q8：多次 Edit 同一个文件时怎么防止出错？
 - 改完所有步骤后跑 check_protocol.py，让 AST 扫描兜底
 
 十六、反模式与防护清单
-以下是 v1.6.0 实施过程中踩过的坑，**后续所有开发者必须避开**。
+以下是 v1.8.3 实施过程中踩过的坑，**后续所有开发者必须避开**。
 #### 反模式 A：多文件分散配置 → 一处集中时的残留
 | 症状 | 根因 | 修复 |
 |------|------|------|
@@ -1574,13 +1574,13 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 | `verify_fuzz_flow` 声称已禁用 LLM（patch 了 `<协议>.llm_mutator._load_model_config`），但在装有 openai 的环境下 LLM 路径仍然连通云端/ollama，seed=42 本地变异被绕过，`EXCEPTION分类出现` 断言间歇 FAIL（结果不可复现） | `generate_mutations()` 内部实际调用的是 `llm_mutator_base.py` 模块级的 `_load_model_config`，patch 协议级薄壳的同名函数不影响基类的真实引用——mock 覆盖的是"名字"而非"被测函数实际解析到的模块" | verify_fuzz_flow.py 补 patch 真实引用点：`importlib.import_module("src.protocols.llm_mutator_base")._load_model_config = lambda *a, **k: {}`，彻底切断 LLM 路径 |
 
 **防护**：
-- mock 前先确认被测函数的真实引用链：`rg "_load_model_config" src/protocols/` 找出**所有定义点与调用点**，patch 实际被调用的那一个（v1.7.0 基类化后为 `llm_mutator_base` 模块级函数，不是协议薄壳）
+- mock 前先确认被测函数的真实引用链：`rg "_load_model_config" src/protocols/` 找出**所有定义点与调用点**，patch 实际被调用的那一个（v1.8.3 基类化后为 `llm_mutator_base` 模块级函数，不是协议薄壳）
 - 禁用 LLM 的测试必须在"装有 openai 的环境"（agentscope_env）下跑——未装 openai 时 LLM 路径天然不通，mock 打错也测不出来（假阴性）
 - 确定性验证：seed 固定后连续跑 ≥5 次结果必须完全一致；出现间歇差异即怀疑 mock 未生效（与反模式 P 联合判断）
 
 ---
 
-**关于 llm_mutator_base.py 基类（v1.7.0 重构）**：
+**关于 llm_mutator_base.py 基类（v1.8.3 重构）**：
 7 个协议的 llm_mutator.py 已合并为 `src/protocols/llm_mutator_base.py` 基类 + 7 个薄壳（27-45 行）。薄壳只负责 `_build_prompt()`（协议特异 prompt）和 `LOG_PREFIX`，其他逻辑（模型配置加载、provider 解析、错误分类、重试、长度校验、None 防护）全部在基类。新增协议时：
 - 复制一个现有薄壳（如 s7comm/llm_mutator.py），改 `LOG_PREFIX` 和 `_build_prompt()` 里的协议名
 - 不要在薄壳里写 OpenAI client 构造、重试、错误分类——这些由基类统一处理
@@ -1707,7 +1707,7 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
   - [ ] `python -c "from src.core.report_generator import PROTOCOL_CONFIG; print(len(PROTOCOL_CONFIG))"` → 8
 - [ ] **7.6** 跑一个既有协议完整 fuzz 流程（比如 modbus），不崩溃，报告正常生成
   - [ ] 至少 3 个功能码测试，能正常发请求、收响应、分类、写报告
-- [ ] **7.7** llm_mutator_base.py 有 timeout=25 — v1.7.1 重构后 timeout 统一在基类函数 generate_mutations，各协议 llm_mutator.py 导入调用
+- [ ] **7.7** llm_mutator_base.py 有 timeout=25 — v1.8.3 重构后 timeout 统一在基类函数 generate_mutations，各协议 llm_mutator.py 导入调用
   - [ ] `rg "timeout=25" src/protocols/llm_mutator_base.py` → 命中（基类统一超时）
   - [ ] `rg "from src.protocols.llm_mutator_base import" src/protocols/*/llm_mutator.py` → 7 个都命中（确认走基类）
 - [ ] **7.8** 无新引入的反模式（对照十六章 A-Z，共 26 条）
@@ -1754,7 +1754,7 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 阶段 3：✅ dnp3_server.py 支持 --port --strict
 阶段 4：✅ 先删旧 dnp3 条目再写新的，rg -c 确认只有 1 次
 阶段 5：✅ check_protocol 11/11 OK + 三协议全过
-阶段 6：✅ 临时脚本已删，PRD 已更新（v1.6.1 反模式 E-H + 十七十八章）
+阶段 6：✅ 临时脚本已删，PRD 已更新（v1.8.3 反模式 E-H + 十七十八章）
 
 **IEC 60870-5-104 接入 Checklist 完成情况**：
 ```
@@ -1767,7 +1767,7 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 阶段 5：✅ check_protocol 11/11 OK + 四协议全过
           发现：JSON 最初 34 个，REQUEST_TYPES 33 个 → 0x46 M_EI_NA_1 是响应方向，从 JSON 删掉 → 33/33 一致
           build_iec104_request 长度字段计算一次就对了（APDU - 2，即 len(asdu) + 4）
-阶段 6：✅ 临时脚本已删，PRD 已更新（v1.6.2 + 反模式 I）
+阶段 6：✅ 临时脚本已删，PRD 已更新（v1.8.3 + 反模式 I）
 
 **IEC 60870-5-104 接入 Checklist 完成情况**：
 ```
@@ -1780,7 +1780,7 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 阶段 5：✅ check_protocol 11/11 OK + 四协议全过
           发现：JSON 最初 34 个，REQUEST_TYPES 33 个 → 0x46 M_EI_NA_1 是响应方向，从 JSON 删掉 → 33/33 一致
           build_iec104_request 长度字段计算一次就对了（APDU - 2，即 len(asdu) + 4）
-阶段 6：✅ 临时脚本已删，PRD 已更新（v1.6.2 + 反模式 I）
+阶段 6：✅ 临时脚本已删，PRD 已更新（v1.8.3 + 反模式 I）
 ```
 
 **IEC 61850 MMS 接入 Checklist 完成情况**：
@@ -1796,10 +1796,10 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 阶段 4：✅ PROTOCOL_CONFIG 37 个 func_name_map + 17 write_funcs + 6 critical_funcs
           关键：IEC61850 的 critical_funcs 选了 initiate/conclude/write/rename/setFile/deleteFile（关联控制 + 写操作 + 文件操作）
 阶段 5：✅ check_protocol 11/11 OK + 五协议全过（端口 102 WARN 是预期行为，< 1024 需管理员）
-阶段 6：✅ 临时脚本已删，PRD 已更新（v1.6.3 + 反模式 J）
+阶段 6：✅ 临时脚本已删，PRD 已更新（v1.8.3 + 反模式 J）
 ```
 
-**EtherNet/IP + OPC UA 接入 Checklist 完成情况**（v1.6.4 ~ v1.7.0）：
+**EtherNet/IP + OPC UA 接入 Checklist 完成情况**（v1.8.3 ~ v1.8.3）：
 ```
 阶段 1：✅ EtherNet/IP: 查 CIP 服务码表（0x01-0x1C 常见 + 0x4C-0x54 对象特定），端口 TCP 44818 / UDP 2222
           OPC UA: 查 Service Node ID 表（446-791 共 28 个请求方向），端口 TCP 4840
@@ -1819,17 +1819,17 @@ assert len(data["func_codes"]) == N   # N 是你查文档得到的准确数量
 阶段 5：✅ check_protocol 7/7 全 11/11 OK
           新增 LLMStatus 冒烟测试：模拟 429 + partial + fallback → 报告生成红色警示框
           发现反模式 L：fuzz_loop_llm.py 未调 auto_load_builtin() → 协议未注册
-阶段 6：✅ 临时脚本已删，PRD 已更新（v1.6.4 + 反模式 K-L + Checklist 阶段 1.4/1.5 + 阶段 5.5）
+阶段 6：✅ 临时脚本已删，PRD 已更新（v1.8.3 + 反模式 K-L + Checklist 阶段 1.4/1.5 + 阶段 5.5）
 ```
 
-**本次额外改动**（不在 Checklist 里，属于 v1.7.0 增强）：
+**本次额外改动**（不在 Checklist 里，属于 v1.8.3 增强）：
 - [src/core/llm_status.py](file:///d:/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent/src/core/llm_status.py) 新建：LLM 调用状态收集器 + `build_warning_html()` 报告警示框（4 种严重程度 critical/high/medium/low）
 - [src/core/security.py](file:///d:/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent/src/core/security.py) 新建：DPAPI 加密 API Key + HTTPS 强制 + 打码显示
 - 7 个 llm_mutator.py + 7 个 client.py 加 `status_collector` 状态回调
 - report_generator.py 加 PROTOCOL_NOTES + Notes 分层渲染（协议专属 NOTE-Pxx 在通用 NOTE-xx 前）
 - fuzz_loop_llm.py 加 auto_load_builtin() + LLMStatus 传递链路
 
-**v1.7.0 第二轮修复（DNP3 fuzz 卡死问题）**：
+**v1.8.3 第二轮修复（DNP3 fuzz 卡死问题）**：
 - [src/core/llm_precheck.py](file:///d:/Application/AllToolsSet/AgnetPrograms/IndusFuzz/fuzz_agent/src/core/llm_precheck.py) 新建：LLM 预连通性检查（"ping" + max_tokens=5 + timeout=15，精准分类 10 种错误）
 - 7× llm_mutator.py **OpenAI client 加 timeout=25**（反模式 M 的修复），解决云端调用无限等
 - fuzz_loop_llm.py **整体重构**：加步骤 0（LLM 预检查）+ 步骤 0.5（端口连通性检查）+ threading 整体协议超时熔断（120 秒）+ 超时后自动写 JSON error_report

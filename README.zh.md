@@ -112,8 +112,8 @@ PRD 早期设想为「多智能体协作（种子生成 / 测试用例生成 / �
 | 版本     | 主要变更                                                      | 状态      |
 | ------ | --------------------------------------------------------- | ------- |
 | v1.8.3 | 版本 fallback 一致性修复（build.ps1/make_release/start_fuzz/version_info.txt）、README/CONTRIBUTING 扁平结构同步、自动化版本合规审计 | 已完成（当前） |
-| v1.8.2 | Windows CI runner（pywin32 环境标记）、GitHub Release 自动 notes、构建产物清理、black 24.10.0 格式化、mcp 依赖                                                    | 已完成 |
-| v1.8.1 | 测试体系 + CI/CD（147 项 pytest、test/release 工作流、pre-commit、动态版本）                | 已完成 |
+| v1.8.3 | Windows CI runner（pywin32 环境标记）、GitHub Release 自动 notes、构建产物清理、black 24.10.0 格式化、mcp 依赖                                                    | 已完成 |
+| v1.8.3 | 测试体系 + CI/CD（147 项 pytest、test/release 工作流、pre-commit、动态版本）                | 已完成 |
 | v2.0.0 | 跨平台支持（macOS/Linux）、桌面端、NVD/CNVD 比对                        | 远期      |
 
 ***
@@ -362,7 +362,7 @@ python main.py
 | P2-011 | S7Comm         | S7Comm 模拟从站使用**自定义帧格式**（非标准端口）。                                                 |
 | P2-016 | 全部（6 个 server） | 从站假定单次 `recv` 即可收到一帧完整报文，不处理 TCP 分片/粘包重组的报文。                                    |
 | P2-017 | MCP 集成         | 3 个 MCP 集成（`codeinspectus_mcp`、`codeguard_mcp`、`vulnclaw_mcp`）仍为桩，开发中。          |
-| R5-7   | 错误报告           | `_summarize_suggestions` 和 `generate_error_report` 目前仅被测试脚本调用，主流程集成待 v1.8.0 完成。 |
+| R5-7   | 错误报告           | `_summarize_suggestions` 和 `generate_error_report` 目前仅被测试脚本调用，主流程集成待 v1.8.3 完成。 |
 
 ***
 
@@ -656,7 +656,7 @@ IndusFuzz/
 本机自测推荐本地 Ollama（隐私、离线）。只有当你需要更强的 LLM 能力且能接受报文出网时才用云端 API。
 
 **我在 macOS/Linux 上能用吗？**
-v1.8.0 官方只支持 Windows 10/11。macOS/Linux 理论可行，但未经过完整测试，可能存在以下问题：
+v1.8.3 官方只支持 Windows 10/11。macOS/Linux 理论可行，但未经过完整测试，可能存在以下问题：
 
 - API Key 无法加密存储
 
@@ -666,7 +666,7 @@ v1.8.0 官方只支持 Windows 10/11。macOS/Linux 理论可行，但未经过�
   建议在 Windows 环境使用，或等待 v2.0 跨平台版本。
 
 **为什么只支持 Windows？**
-因为 v1.8.0 使用了 Windows 专用的 DPAPI 加密 API Key。v2.0 计划用跨平台的 keyring 库替代，届时将支持 macOS 和 Linux。
+因为 v1.8.3 使用了 Windows 专用的 DPAPI 加密 API Key。v2.0 计划用跨平台的 keyring 库替代，届时将支持 macOS 和 Linux。
 
 ***
 
