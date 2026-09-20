@@ -1,0 +1,257 @@
+{
+  "5.15": {
+    "dim1_top_level": {
+      "main.py": true,
+      "requirements.txt": true,
+      "README.md": true,
+      "README.zh.md": true,
+      "CHANGELOG.md": true,
+      "LICENSE": true,
+      ".gitignore": true,
+      "IndusFuzz.spec": true
+    },
+    "dim2_src_structure": {
+      "__init__.py": true,
+      "core/": true,
+      "protocols/": true,
+      "integrations/": true,
+      "base.py": true,
+      "registry.py": true,
+      "llm_mutator_base.py": true
+    },
+    "dim3_core_13": {
+      "version.py": true,
+      "menu.py": true,
+      "fuzz_loop_llm.py": true,
+      "report_generator.py": true,
+      "slave_launcher.py": true,
+      "security.py": true,
+      "llm_precheck.py": true,
+      "llm_status.py": true,
+      "runtime_config.py": true,
+      "diagnose.py": true,
+      "gpu_detector.py": true,
+      "color_output.py": true,
+      "result_analyzer.py": true
+    },
+    "dim4_protocols": {
+      "modbus": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "s7comm": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "dnp3": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "iec104": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "iec61850": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "enip": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      },
+      "opcua": {
+        "client.py": true,
+        "mutator.py": true,
+        "llm_mutator.py": true
+      }
+    },
+    "dim5_func_codes": {
+      "dnp3_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 31
+      },
+      "enip_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 27
+      },
+      "iec104_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 33
+      },
+      "iec61850_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 17
+      },
+      "modbus_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 19
+      },
+      "opcua_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 28
+      },
+      "s7comm_func_codes.json": {
+        "has_protocol": true,
+        "has_port": true,
+        "codes_nonempty": true,
+        "n_codes": 15
+      }
+    },
+    "dim6_servers": {
+      "modbus": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "s7comm": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "dnp3": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "iec104": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "iec61850": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "enip": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      },
+      "opcua": {
+        "exists": true,
+        "has_port_arg": true,
+        "has_strict_arg": true,
+        "binds_127": true,
+        "binds_0_0_0": false
+      }
+    },
+    "dim7_tests": {
+      "conftest.py": true,
+      "test_py_count": 4,
+      "verify_files_found": [],
+      "legacy_found": []
+    },
+    "dim8_tools": {
+      "check_protocol.py": true,
+      "clean_before_release.py": true,
+      "verify_dir": true,
+      "legacy_dir": true
+    },
+    "dim9_github": {
+      "exists": true,
+      "workflows": [
+        "D:\\Application\\AllToolsSet\\AgnetPrograms\\IndusFuzz\\.github\\workflows\\release.yml",
+        "D:\\Application\\AllToolsSet\\AgnetPrograms\\IndusFuzz\\.github\\workflows\\test.yml"
+      ]
+    },
+    "dim10_assets": {
+      "simhei.ttf": true,
+      "icon.ico": true
+    },
+    "dim11_tempfiles": {
+      "__pycache__": [],
+      ".pyc": [],
+      ".pytest_cache": [],
+      ".coverage": [],
+      "coverage_html": [],
+      "htmlcov": [],
+      "build/": [],
+      "dist/": [],
+      ".log": [],
+      "reports/*.html": [],
+      "reports/*.pdf": []
+    },
+    "dim12_gitignore": {
+      "__pycache__": true,
+      "agentscope_env": true,
+      "reports/": true,
+      "dist/": true,
+      "build/": true,
+      "htmlcov": true,
+      "coverage_html": true,
+      ".pytest_cache": true,
+      ".coverage": true,
+      "*.log": true
+    }
+  },
+  "5.14": {
+    "5.14.1_config": {
+      "pytest.ini_exists": true,
+      "pyproject_exists": false,
+      "ini_content": "[pytest]\ntestpaths = tests\npython_files = test_*.py\npython_classes = Test*\npython_functions = test_*\naddopts = -v --tb=short --strict-markers --cov=src --cov-report=term-missing --cov-report=html:coverage_html\npythonpath = .\nmarkers =\n    slow: marks tests as slow\n    network: marks tests that require network access\n    real_hw: marks tests that require real hardware"
+    },
+    "5.14.2_tools": {
+      "pytest-cov": true,
+      "pytest-timeout": true,
+      "flake8": true,
+      "bandit": true
+    },
+    "5.14.3_bad_asserts": [],
+    "5.14.4_abs_paths": [],
+    "5.14.5_pytest": {
+      "collect_exit": 0,
+      "collected_items": 147,
+      "pytest_exit": 0,
+      "pytest_summary": "============================ 147 passed in 28.49s ============================="
+    }
+  },
+  "5.12": {
+    "flake8_src_summary": [
+      "179   E501 line too long (129 > 120 characters)",
+      "1     E741 ambiguous variable name 'l'",
+      "35    F541 f-string is missing placeholders",
+      "6     F841 local variable 'response' is assigned to but never used",
+      "1     W391 blank line at end of file"
+    ],
+    "flake8_tests_summary": [
+      "tests/test_mutator.py:58:121: E501 line too long (126 > 120 characters)",
+      "1     E501 line too long (126 > 120 characters)"
+    ],
+    "bandit_src": {
+      "high_count": 0,
+      "top5": []
+    },
+    "plaintext_key_patterns": []
+  }
+}
