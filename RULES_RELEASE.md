@@ -1,4 +1,4 @@
-﻿# IndusFuzz 发布规则 v3（2026-09-21 固化）
+# IndusFuzz 发布规则 v3（2026-09-21 固化）
 
 ## 触发条件
 用户明确说"发布 v{version}"，Agent 启动完整流水线。
@@ -60,8 +60,16 @@ python -m PyInstaller --clean IndusFuzz.spec
 ### R9 .gitignore 屏蔽二进制产物
 必须包含：`*.zip` / `IndusFuzz-v*-win64/` / `build/` / `dist/` / `agentscope_env/` / `reports/*.html` / `reports/*.pdf` / `.coverage` / `htmlcov/` / `.pytest_cache/` / `__pycache__/` / `*.pyc`
 
-### R10 安全边界（禁止越权）
-Agent 仅执行：本地 commit / tag / PyInstaller / ZIP。**git push / GitHub Release / 二进制上传由用户手动执行。**
+### R10 交付 push 命令（**必须输出，Agent 不执行**）
+Agent **禁止执行** `git push` / GitHub Release 创建 / 二进制上传。
+但每次发布完成后**必须输出以下命令块**（占位符 `{V}` 替换为当前版本号），由用户手动执行：
+```bash
+git push origin main
+git push origin v{V}
+# GitHub 网页创建 Release: https://github.com/{user}/{repo}/releases/new
+# 上传 IndusFuzz-v{V}-win64.zip 作为 Release Asset
+```
+**遗漏输出 push 命令 = R10 违规**。发布流程闭环以用户执行 push 完成为标志。
 
 ### R11 审计迭代（**强制，发现即更新**）
 - 每次审计发现新问题 → 同步更新 `audit_prd.py` 的检查维度
