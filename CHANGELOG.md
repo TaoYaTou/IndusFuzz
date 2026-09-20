@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.8.3] - 2026-09-20
 
 ### 本版本更新
-
 - 修复了一些BUG
 - CI/CD 工作流完善：test.yml + release.yml 切换 Windows runner、black 格式化检查集成、覆盖率门禁 --cov-fail-under=16
 - Release 说明自动提取：release.yml 从 CHANGELOG.md 提取对应版本段作为 Release body
@@ -17,43 +16,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 扁平迁移收尾：README.md / README.zh.md / CONTRIBUTING.md 目录树、docs/PRD 全文版本号同步 v1.8.3
 
 ### 核心能力
-
 暂无更新
 
 ### 安全特性
-
 暂无更新
 
 ### 安装
-
-前置要求：Python 3.12+、Git、Windows 系统（项目使用 pywin32 / Windows DPAPI）
-
 **方式一：下载 EXE（推荐）**
-
 - 下载 `IndusFuzz-v1.8.3-win64.zip`
 - 解压到任意目录
 - 双击 `IndusFuzz.exe`
 
-**方式二：从源码运行**
+**方式二：从源码运行（开发调试用）**
+
+前置要求：Python 3.12+、Git、Windows 系统（项目使用 pywin32 / Windows DPAPI）
 
 ```
 git clone https://github.com/TaoYaTou/IndusFuzz.git
 cd IndusFuzz
 pip install -r requirements.txt
-python main.py
 ```
 
-可选：创建虚拟环境（推荐）+ 开发依赖
-
-```
-python -m venv venv
-venv\Scripts\activate          # PowerShell / CMD
-# source venv/bin/activate     # Git Bash
-pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-test.txt
-python main.py
-```
 
 ## [1.8.2] - 2026-09-20
 
