@@ -30,11 +30,11 @@ def _build_prompt(base_payload_hex, count, target_func_code=None):
 
 
 def llm_generate_mutations(base_payload_hex, count=5, max_retries=3, target_func_code=None,
-                           status_collector=None, func_code_str=None):
+                           status_collector=None, func_code_str=None, stop_event=None):
     prompt = _build_prompt(base_payload_hex, count, target_func_code)
     return generate_mutations(
         base_payload_hex, count, prompt, LOG_PREFIX,
-        max_retries=max_retries, status_collector=status_collector, func_code_str=func_code_str,
+        max_retries=max_retries, status_collector=status_collector, func_code_str=func_code_str, stop_event=stop_event,
     )
 
 

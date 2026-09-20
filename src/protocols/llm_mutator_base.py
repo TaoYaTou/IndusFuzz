@@ -107,7 +107,16 @@ def _clean_line(line):
 
 
 def generate_mutations(base_payload_hex, count, prompt, log_prefix="LLM",
-                       max_retries=3, status_collector=None, func_code_str=None):
+                       max_retries=3, status_collector=None, func_code_str=None,
+                       stop_event=None):
+    """Generate mutations via LLM, cooperative-cancellable via stop_event.
+
+    stop_event (threading.Event, optional): if set, aborts immediately and returns [].
+    """
+    if stop_event and stop_event.is_set():
+        print(f"[{log_prefix}] stop_event 已触发，跳过 LLM 变异")
+        return []
+
     if not _OPENAI_AVAILABLE:
         print(f"[{log_prefix}] openai 库未安装，跳过 LLM 变异")
         if status_collector:
@@ -158,11 +167,18 @@ def generate_mutations(base_payload_hex, count, prompt, log_prefix="LLM",
 
     print(f"[{log_prefix}] 使用模型: {resolved['name']} @ {resolved['base_url']}")
     if status_collector:
+        if hasattr(status_collector, "set_model_info"):
+            status_collector.set_model_info(
+                provider=provider, name=resolved["name"], base_url=resolved["base_url"]
+            )
         status_collector.on_call(func_code_str or '?')
 
     base_len = len(base_payload_hex) if base_payload_hex else 0
 
     for attempt in range(max_retries):
+        if stop_event and stop_event.is_set():
+            print(f"[{log_prefix}] stop_event 已触发，中止 LLM 变异")
+            return []
         try:
             response = client.chat.completions.create(
                 model=resolved["name"],

@@ -293,7 +293,7 @@ class IEC104Client(ProtocolBase):
                 mutations = llm_generate_mutations(
                     base_hex, count=5,
                     status_collector=llm_status,
-                    func_code_str=f'0x{func_code:02X}')
+                    func_code_str=f'0x{func_code:02X}', stop_event=stop_event)
             except Exception as e:
                 print(f"警告：IEC104 LLM 变异异常 {type(e).__name__}: {e}，回退到本地变异")
                 mutations = []

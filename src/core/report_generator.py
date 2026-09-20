@@ -514,6 +514,188 @@ IMPACTS = {
     ),
 }
 
+# Per-protocol per-func_code 细粒度影响描述 —— 优先查 PROTOCOL_IMPACTS，找不到回退通用 IMPACTS
+# Key: (protocol_name_lower, func_code_int, impact_key_str) → (zh, en)
+PROTOCOL_IMPACTS = {
+    # --- Modbus TCP ---
+    ("modbus", 0x10, "write_disconnect"): (
+        "写多个寄存器(0x10)导致连接断开，可能是请求长度校验缺陷触发缓冲区溢出或看门狗复位，PLC 状态可能已被破坏",
+        "Write Multiple Registers (0x10) caused disconnect, likely a length-check bug triggering buffer overflow or watchdog; PLC state may be corrupted",
+    ),
+    ("modbus", 0x0F, "write_disconnect"): (
+        "写多个线圈(0x0F)导致连接断开，大量 Coil 写请求可能耗尽从站内存或触发越界访问",
+        "Write Multiple Coils (0x0F) caused disconnect, large coil batch may exhaust slave memory or trigger OOB access",
+    ),
+    ("modbus", 0x05, "write_disconnect"): (
+        "写单线圈(0x05)导致连接断开，可能是从站状态机在处理非法线圈地址时崩溃",
+        "Write Single Coil (0x05) caused disconnect, possible slave state machine crash on invalid address",
+    ),
+    ("modbus", 0x06, "write_disconnect"): (
+        "写单寄存器(0x06)导致连接断开，寄存器地址或值校验缺陷可能导致从站异常",
+        "Write Single Register (0x06) caused disconnect, register addr/value validation bug may trigger slave exception",
+    ),
+    ("modbus", 0x17, "write_disconnect"): (
+        "读写多个寄存器(0x17)导致连接断开，组合读写操作可能触发事务管理竞态条件",
+        "Read/Write Multiple Registers (0x17) caused disconnect, combined R/W may trigger transaction race condition",
+    ),
+    ("modbus", 0x08, "critical_disconnect"): (
+        "诊断功能(0x08)导致连接断开，可能触发从站看门狗复位或状态机异常",
+        "Diagnostics (0x08) caused disconnect, may trigger slave watchdog reset or state machine anomaly",
+    ),
+    ("modbus", 0x0B, "read_disconnect"): (
+        "通信事件计数器(0x0B)导致连接断开，异常请求可能耗尽连接队列或日志缓冲区",
+        "Comm Event Counter (0x0B) caused disconnect, malformed request may exhaust conn queue or log buffer",
+    ),
+    ("modbus", 0x0C, "read_disconnect"): (
+        "通信事件日志(0x0C)导致连接断开，大日志请求可能耗尽从站内存",
+        "Comm Event Log (0x0C) caused disconnect, large log request may exhaust slave memory",
+    ),
+    ("modbus", 0x14, "read_disconnect"): (
+        "读文件记录(0x14)导致连接断开，畸形文件记录号可能触发越界访问或路径穿越",
+        "Read File Record (0x14) caused disconnect, malformed file record number may trigger OOB access or path traversal",
+    ),
+    ("modbus", 0x15, "write_disconnect"): (
+        "写文件记录(0x15)导致连接断开，畸形文件记录写入可能破坏从站固件或文件系统",
+        "Write File Record (0x15) caused disconnect, malformed file record write may corrupt slave firmware or filesystem",
+    ),
+    ("modbus", 0x11, "read_disconnect"): (
+        "报告从站ID(0x11)导致连接断开，畸形请求可能导致内存越界",
+        "Report Slave ID (0x11) caused disconnect, malformed request may trigger memory OOB",
+    ),
+    ("modbus", 0x2B, "read_disconnect"): (
+        "读设备标识(0x2B)导致连接断开，畸形标识请求可能触发从站解析异常",
+        "Read Device Identification (0x2B) caused disconnect, malformed ID request may trigger parse error",
+    ),
+
+    # --- S7Comm ---
+    ("s7comm", 0x05, "write_disconnect"): (
+        "S7 写变量(0x05)导致连接断开，可能触发 PLC 内存越界或看门狗复位",
+        "S7 Write Variable (0x05) caused disconnect, may trigger PLC memory OOB or watchdog reset",
+    ),
+    ("s7comm", 0x07, "critical_disconnect"): (
+        "Block Download(0x07)导致连接断开，畸形块下载可能破坏 PLC 程序内存，可能导致远程代码执行",
+        "Block Download (0x07) caused disconnect, malformed block may corrupt PLC program memory, potential RCE",
+    ),
+    ("s7comm", 0x28, "critical_disconnect"): (
+        "PLC Stop(0x28)导致连接断开，PLC 进入 STOP 状态后拒绝新连接，可能被用于 DoS",
+        "PLC Stop (0x28) caused disconnect, PLC entered STOP state rejecting new connections, potential DoS",
+    ),
+    ("s7comm", 0x29, "critical_disconnect"): (
+        "PLC Control(0x29)导致连接断开，畸形控制请求可能导致 PLC 状态机崩溃",
+        "PLC Control (0x29) caused disconnect, malformed control request may crash PLC state machine",
+    ),
+    ("s7comm", 0x04, "read_disconnect"): (
+        "S7 读变量(0x04)导致连接断开，畸形读请求可能触发 DB 块越界访问",
+        "S7 Read Variable (0x04) caused disconnect, malformed read may trigger DB block OOB access",
+    ),
+    ("s7comm", 0x1F, "read_disconnect"): (
+        "Diagnostics(0x1F)导致连接断开，畸形诊断请求可能导致 PLC 看门狗复位",
+        "Diagnostics (0x1F) caused disconnect, malformed request may trigger PLC watchdog reset",
+    ),
+
+    # --- DNP3 ---
+    ("dnp3", 0x0D, "critical_disconnect"): (
+        "冷启动(0x0D)导致连接断开，RTU 正在重启因此拒绝连接，可能被用于 DoS",
+        "Cold Restart (0x0D) caused disconnect, RTU rebooting and rejecting connections, potential DoS",
+    ),
+    ("dnp3", 0x0E, "critical_disconnect"): (
+        "热启动(0x0E)导致连接断开，RTU 正在重启因此拒绝连接",
+        "Warm Restart (0x0E) caused disconnect, RTU rebooting and rejecting connections",
+    ),
+    ("dnp3", 0x02, "write_disconnect"): (
+        "DNP3 WRITE(0x02)导致连接断开，畸形写请求可能导致 IED 数据库损坏",
+        "DNP3 WRITE (0x02) caused disconnect, malformed write may corrupt IED database",
+    ),
+    ("dnp3", 0x04, "write_disconnect"): (
+        "OPERATE(0x04)导致连接断开，畸形操作选择可能导致从站状态机异常",
+        "OPERATE (0x04) caused disconnect, malformed operate selection may cause slave state anomaly",
+    ),
+    ("dnp3", 0x10, "critical_disconnect"): (
+        "INITIALIZE_APPLICATION(0x10)导致连接断开，IED 可能重新初始化应用导致暂时拒绝服务",
+        "INITIALIZE_APPLICATION (0x10) caused disconnect, IED may be reinitializing application",
+    ),
+
+    # --- IEC 104 ---
+    ("iec104", 0x64, "critical_disconnect"): (
+        "总召唤(0x64)导致连接断开，畸形 C_IC 帧可能触发 IED 状态机异常或看门狗复位",
+        "General Interrogation (0x64) caused disconnect, malformed C_IC frame may trigger IED state machine anomaly",
+    ),
+    ("iec104", 0x67, "critical_disconnect"): (
+        "时钟同步(0x67)导致连接断开，畸形时间戳可能导致 IED 时间状态异常",
+        "Clock Synchronization (0x67) caused disconnect, malformed timestamp may cause IED time state anomaly",
+    ),
+    ("iec104", 0x2D, "write_disconnect"): (
+        "单点命令(0x2D)导致连接断开，畸形命令可能导致 IED 输出状态异常",
+        "Single Command (0x2D) caused disconnect, malformed command may cause IED output anomaly",
+    ),
+    ("iec104", 0x69, "critical_disconnect"): (
+        "复位进程(0x69)导致连接断开，IED 被复位后暂时拒绝服务，可能被用于 DoS",
+        "Reset Process (0x69) caused disconnect, IED reset temporarily rejecting connections, potential DoS",
+    ),
+
+    # --- IEC 61850 MMS ---
+    ("iec61850", 0xB2, "write_disconnect"): (
+        "MMS Write Request(0xB2)导致连接断开，畸形写请求可能触发从站内存越界或对象模型异常",
+        "MMS Write Request (0xB2) caused disconnect, malformed write may trigger slave memory OOB or object model anomaly",
+    ),
+    ("iec61850", 0x81, "critical_disconnect"): (
+        "MMS Initiate(0x81)导致连接断开，畸形协商请求可能导致 MMS 服务初始化失败",
+        "MMS Initiate (0x81) caused disconnect, malformed negotiation may cause MMS service init failure",
+    ),
+    ("iec61850", 0xB9, "write_disconnect"): (
+        "MMS Rename(0xB9)导致连接断开，畸形重命名请求可能破坏 MMS 对象命名空间",
+        "MMS Rename (0xB9) caused disconnect, malformed rename may corrupt MMS object namespace",
+    ),
+    ("iec61850", 0xC2, "critical_disconnect"): (
+        "MMS Delete File Request(0xC2)导致连接断开，畸形文件删除可能破坏从站文件系统",
+        "MMS Delete File Request (0xC2) caused disconnect, malformed delete may corrupt slave filesystem",
+    ),
+
+    # --- EtherNet/IP CIP ---
+    ("enip", 0x05, "critical_disconnect"): (
+        "Reset(0x05)导致连接断开，PLC 正在复位因此拒绝新连接，可能被用于 DoS",
+        "Reset (0x05) caused disconnect, PLC resetting and rejecting connections, potential DoS",
+    ),
+    ("enip", 0x06, "critical_disconnect"): (
+        "Start(0x06)导致连接断开，畸形 Start 请求可能导致 PLC 运行时异常",
+        "Start (0x06) caused disconnect, malformed Start may trigger PLC runtime anomaly",
+    ),
+    ("enip", 0x09, "critical_disconnect"): (
+        "Delete Object(0x09)导致连接断开，畸形删除路径可能破坏 CIP 对象模型",
+        "Delete Object (0x09) caused disconnect, malformed path may corrupt CIP object model",
+    ),
+    ("enip", 0x4D, "write_disconnect"): (
+        "Write Tag(0x4D)导致连接断开，畸形标签写入可能触发控制器数据异常",
+        "Write Tag (0x4D) caused disconnect, malformed tag write may trigger controller data anomaly",
+    ),
+    ("enip", 0x54, "critical_disconnect"): (
+        "Forward Open(0x54)导致连接断开，畸形连接请求可能耗尽控制器资源",
+        "Forward Open (0x54) caused disconnect, malformed connection request may exhaust controller resources",
+    ),
+
+    # --- OPC UA ---
+    ("opcua", 447, "critical_disconnect"): (
+        "CloseSecureChannel(447)导致连接断开，畸形安全通道关闭请求可能触发 OPC UA 服务异常",
+        "CloseSecureChannel (447) caused disconnect, malformed secure channel close may trigger OPC UA service anomaly",
+    ),
+    ("opcua", 463, "critical_disconnect"): (
+        "CloseSession(463)导致连接断开，畸形会话关闭请求可能导致服务器状态机崩溃",
+        "CloseSession (463) caused disconnect, malformed session close may crash server state machine",
+    ),
+    ("opcua", 673, "write_disconnect"): (
+        "Write(673)导致连接断开，畸形节点写入可能触发服务器地址空间越界或权限异常",
+        "Write (673) caused disconnect, malformed node write may trigger server address space OOB or permission anomaly",
+    ),
+    ("opcua", 446, "critical_disconnect"): (
+        "OpenSecureChannel(446)导致连接断开，畸形安全通道协商请求可能触发服务器解析异常",
+        "OpenSecureChannel (446) caused disconnect, malformed secure channel request may trigger server parse error",
+    ),
+    ("opcua", 752, "critical_disconnect"): (
+        "DeleteMonitoredItems(752)导致连接断开，畸形监控项删除可能破坏服务器订阅管理",
+        "DeleteMonitoredItems (752) caused disconnect, malformed delete may corrupt server subscription management",
+    ),
+}
+
 SEVERITY_LABEL = {
     "high": ("高危 (High)", "High"),
     "medium": ("中危 (Medium)", "Medium"),
@@ -521,7 +703,14 @@ SEVERITY_LABEL = {
 }
 
 
-def _get_impact(key, code="", lang="zh"):
+def _get_impact(key, code="", lang="zh", protocol_name=None, func_code=None):
+    """Return impact description string. Precedence: PROTOCOL_IMPACTS → generic IMPACTS → unclassified."""
+    if protocol_name and func_code is not None:
+        lookup = (protocol_name.lower(), func_code, key)
+        if lookup in PROTOCOL_IMPACTS:
+            zh, en = PROTOCOL_IMPACTS[lookup]
+            template = zh if lang == "zh" else en
+            return template.format(code=code)
     zh, en = IMPACTS.get(key, IMPACTS["unclassified"])
     template = zh if lang == "zh" else en
     return template.format(code=code)
@@ -717,7 +906,7 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
         )
         r["severity"] = sev_key
         r["severity_label"] = SEVERITY_LABEL.get(sev_key, ("", ""))[0 if lang == "zh" else 1] if sev_key else ""
-        r["impact"] = _get_impact(imp_key, code, lang) if imp_key else ""
+        r["impact"] = _get_impact(imp_key, code, lang, protocol_name=protocol_name, func_code=r.get("func_code")) if imp_key else ""
         r["func_name"] = _get_func_name(r.get("func_code", 0), protocol_name)
 
     total = len(results)
@@ -809,6 +998,25 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
     # LLM status warning (if any issues)
     if llm_status is not None and getattr(llm_status, "has_warning", False):
         h.append(llm_status.build_warning_html(lang))
+
+    # LLM model info — 显示本次 fuzz 使用的模型 ID 和请求地址
+    if llm_status is not None and getattr(llm_status, "model_info", None):
+        mi = llm_status.model_info
+        model_id = _esc(mi.get("name", "unknown"))
+        base_url = _esc(mi.get("base_url", ""))
+        provider = _esc(mi.get("provider", "unknown"))
+        if lang == "zh":
+            h.append(
+                f"<p><strong>🔧 LLM 模型：</strong>"
+                f"Provider={provider} | <strong>Model={model_id}</strong> | "
+                f"Endpoint=<code>{base_url}</code></p>"
+            )
+        else:
+            h.append(
+                f"<p><strong>🔧 LLM Model:</strong> "
+                f"Provider={provider} | <strong>Model={model_id}</strong> | "
+                f"Endpoint=<code>{base_url}</code></p>"
+            )
 
     try:
         from src.core.runtime_config import is_gpu_enabled, get_gpu_summary

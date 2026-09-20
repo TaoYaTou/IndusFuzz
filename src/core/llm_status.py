@@ -33,6 +33,16 @@ class LLMStatus:
         self.error_other = 0
         self.first_429_msg = None
         self.first_401_msg = None
+        self.model_info = None    # {"provider": str, "name": str, "base_url": str}，首次 set 后不再覆盖
+
+    def set_model_info(self, provider, name, base_url):
+        """记录本轮 fuzz 使用的 LLM 模型信息。首次设置后不覆盖（取第一个有效值）。"""
+        if self.model_info is None:
+            self.model_info = {
+                "provider": provider or "none",
+                "name": name or "unknown",
+                "base_url": base_url or "",
+            }
 
     def record(self, evt_type, fc_str=None, details=None):
         entry = {"type": evt_type}
@@ -221,4 +231,5 @@ class LLMStatus:
             "error_401": self.error_401,
             "error_other": self.error_other,
             "events": self.events[:200],
+            "model_info": self.model_info,
         }

@@ -14,11 +14,11 @@ Mutation strategies: function code changes (0x01-0x15), destination/source addre
 Do not include any explanations."""
 
 
-def llm_generate_mutations(base_payload_hex, count=5, max_retries=3, status_collector=None, func_code_str=None):
+def llm_generate_mutations(base_payload_hex, count=5, max_retries=3, status_collector=None, func_code_str=None, stop_event=None):
     prompt = _build_prompt(base_payload_hex, count)
     return generate_mutations(
         base_payload_hex, count, prompt, LOG_PREFIX,
-        max_retries=max_retries, status_collector=status_collector, func_code_str=func_code_str,
+        max_retries=max_retries, status_collector=status_collector, func_code_str=func_code_str, stop_event=stop_event,
     )
 
 
