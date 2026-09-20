@@ -294,7 +294,19 @@ def run(config):
             protocol_llm_status.on_call("TIMEOUT")
             # 触发协作停止事件，让线程在下一个检查点自行退出
             stop_event.set()
-            # 给线程一个宽限期让其因 socket timeout 自行退出，避免 daemon 线程累积
+            # 强制关闭 client 持有的 socket — recv 阻塞中的线程会立即抛 OSError 退出
+            _client = client_instance[0]
+            if _client is not None:
+                try:
+                    s = getattr(_client, "_sock", None)
+                    if s is not None:
+                        try: s.shutdown(__import__("socket").SHUT_RDWR)
+                        except Exception: pass
+                        try: s.close()
+                        except Exception: pass
+                except Exception:
+                    pass
+            # 给线程一个宽限期让其彻底退出（socket 关闭后 recv 立即抛异常）
             t.join(timeout=5)
             if t.is_alive():
                 print(f"⚠️  [超时] 协议 {protocol_name} 线程仍在运行，将在主进程退出时被强制清理")
@@ -319,6 +331,7 @@ def run(config):
             "llm_status": protocol_llm_status,
             "slave_mode": slave_mode,
             "protocol_timed_out": protocol_timed_out,
+            "_client": client_instance[0],  # 用于超时强制关闭 socket
         })
 
         all_results.extend(protocol_results)
@@ -326,6 +339,22 @@ def run(config):
         all_build_failures.extend(protocol_build_failures)
 
     # ============ 步骤 2：汇总 + 错误报告 ============
+    # 最终安全网：强制关闭所有 client 的 socket，确保没有 daemon 线程在 recv 里阻塞继续输出
+    import socket as _socket_mod
+    for pd in all_protocol_data:
+        _c = pd.get("_client")
+        if _c is None:
+            continue
+        try:
+            s = getattr(_c, "_sock", None)
+            if s is not None:
+                try: s.shutdown(_socket_mod.SHUT_RDWR)
+                except Exception: pass
+                try: s.close()
+                except Exception: pass
+        except Exception:
+            pass
+
     conn_closed_count = sum(1 for r in all_results if r.get("classification") == "CONN_CLOSED")
     print(f"\n{'='*50}")
     print(f"=== 全部协议总计 ===")
