@@ -13,13 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes / 修复
 
+- **S7comm / IEC61850 仿真器半成品修复**（server/s7comm_server.py + server/iec61850_server.py）
+  — S7comm server：重写为三阶段协议状态机 `COTP Setup (0xE0) → S7 Setup (opcode=0x32) → DATA`；修复 COTP Setup Request type 识别（S7comm 用 0xE0，经典 ISO 8650 用 0x11）；对称交换 src/dst ref 构造 0xD0 Ack
+  — IEC61850 server：重写为两阶段状态机 `COTP Setup → DATA`；修复 MMS PDU offset（原代码 data[10] 应为 data[9]：TPKT4 + COTP Data Transfer fixed5 = 9，ISO 8650 Session=1 → MMS 从 10 开始 → data[9] 错 data[10] 也错，实际是 fixed-format COTP Data Transfer 5 bytes + Session 1 byte = offset 10）；修复 TPKT 起始字节同时接受 0x30 (Connectionless) 和 0x03 (Connection Oriented)
+  — 回归测试：IndusFuzz 原生 S7CommClient / IEC61850Client `connect()` 全 PASS + `send_payload` 正常响应
+- **报告模型信息位置**：LLM 模型 + GPU 加速合并成「运行信息」块，移除独立 LLM Model 段落；HTML 改 → PDF 自动同步（同 HTML 源）
 - **超时竞态条件**：全局超时触发后后台任务仍在输出进度（主控 set stop_event 后，LLM 重试循环和 7 协议 llm_mutator 不检查它，导致 Worker 线程继续运行）
   — `llm_mutator_base.generate_mutations` 新增 `stop_event` 参数，入口 + 每次重试循环前检查 `stop_event.is_set()`；7 协议 `llm_mutator.py` 签名透传；7 协议 `client.py` 调用时传入全局 `stop_event`
   — 17 文件，+259 行，pytest 147 passed
 - **报告影响描述模板化**：同一分类（CONN_CLOSED）下不同功能码输出完全相同的影响描述
   — 新增 `PROTOCOL_IMPACTS` 字典（41 条 per-protocol per-func_code 细粒度描述），覆盖 Modbus 12 / S7Comm 6 / DNP3 5 / IEC104 4 / IEC61850 4 / EtherNet/IP 5 / OPC UA 5
   — `_get_impact(key, code, lang, protocol_name, func_code)` 优先查 `(protocol, func_code, key)`，找不到回退通用 `IMPACTS`（向后兼容）
-  — 示例：Modbus 0x10 Write Multiple Registers → "写多个寄存器(0x10)导致连接断开，可能是请求长度校验缺陷触发缓冲区溢出或看门狗复位"；0x0B Get Comm Event Counter → "通信事件计数器(0x0B)导致连接断开，异常请求可能耗尽连接队列或日志缓冲区"
 
 ### Added / 新增
 

@@ -999,35 +999,35 @@ def _build_html(results, skipped, build_failures, protocol_name, target, scenari
     if llm_status is not None and getattr(llm_status, "has_warning", False):
         h.append(llm_status.build_warning_html(lang))
 
-    # LLM model info — 显示本次 fuzz 使用的模型 ID 和请求地址
+    # 运行信息：LLM 模型 + GPU 加速 合并成一块（PDF 同 HTML 同步）
+    run_info_parts = []
     if llm_status is not None and getattr(llm_status, "model_info", None):
         mi = llm_status.model_info
         model_id = _esc(mi.get("name", "unknown"))
         base_url = _esc(mi.get("base_url", ""))
         provider = _esc(mi.get("provider", "unknown"))
         if lang == "zh":
-            h.append(
-                f"<p><strong>🔧 LLM 模型：</strong>"
-                f"Provider={provider} | <strong>Model={model_id}</strong> | "
-                f"Endpoint=<code>{base_url}</code></p>"
+            run_info_parts.append(
+                f"🔧 <strong>LLM 模型</strong>: Provider={provider} | "
+                f"<strong>Model={model_id}</strong> | Endpoint=<code>{base_url}</code>"
             )
         else:
-            h.append(
-                f"<p><strong>🔧 LLM Model:</strong> "
-                f"Provider={provider} | <strong>Model={model_id}</strong> | "
-                f"Endpoint=<code>{base_url}</code></p>"
+            run_info_parts.append(
+                f"🔧 <strong>LLM Model</strong>: Provider={provider} | "
+                f"<strong>Model={model_id}</strong> | Endpoint=<code>{base_url}</code>"
             )
-
     try:
         from src.core.runtime_config import is_gpu_enabled, get_gpu_summary
         if is_gpu_enabled():
             gpu_info = _esc(get_gpu_summary())
             if lang == "zh":
-                h.append(f"<p><strong>GPU 加速：</strong>已启用（{gpu_info}）</p>")
+                run_info_parts.append(f"🖥️ <strong>GPU 加速</strong>: 已启用（{gpu_info}）")
             else:
-                h.append(f"<p><strong>GPU Acceleration:</strong> Enabled ({gpu_info})</p>")
+                run_info_parts.append(f"🖥️ <strong>GPU Acceleration</strong>: Enabled ({gpu_info})")
     except Exception:
         pass
+    if run_info_parts:
+        h.append(f"<p style='line-height:1.8'>{'<br>'.join(run_info_parts)}</p>")
 
     h.append(f"<h2>{t('统计摘要 / Summary', 'Summary')}</h2>")
     h.append("<table>")
