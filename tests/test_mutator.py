@@ -55,7 +55,9 @@ class TestMutatePayload:
         fn = _load_mutator(proto)
         result = fn(sample_modbus_payload)
         assert isinstance(result, (bytes, bytearray)), f"{proto}: mutator 必须返回 bytes/bytearray"
-        assert len(result) == len(sample_modbus_payload), f"{proto}: 长度应与输入一致 ({len(result)} != {len(sample_modbus_payload)})"
+        assert len(result) == len(
+            sample_modbus_payload
+        ), f"{proto}: 长度应与输入一致 ({len(result)} != {len(sample_modbus_payload)})"
 
     def test_large_payload_handled(self, proto):
         fn = _load_mutator(proto)
