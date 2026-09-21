@@ -27,6 +27,7 @@
 | **L21** | **组装/文档时凭空写文件名不核实磁盘** — P3-3 凭空写 config/protocols.json（实际只有 connect_templates.yaml），违反 P1-3c | 本会话 2026-09-21 | P1-3c/P3-3 |
 | **L22** | **daemon 线程在 socket recv 阻塞，报告生成后还输出** — stop_event.set() 后 recv 还在等 timeout，主循环已 continue 到报告生成；必须额外 shutdown+close socket 强制打断 recv | 本会话 2026-09-21 | fuzz_loop_llm.py |
 | **L23** | **打包前跳过 black 格式化导致 flake8 E701/E501 报错** — 修 socket 时用了 `try: x() except: pass` 一行写法，未跑 black 直接打包，EXE 运行时 flake8/导入链路出错；**打包前必须先 black 全项目 + flake8 零错误** | 本会话 2026-09-21 | P2-1a/P3-0 |
+| **L24** | **函数内 `import socket` 覆盖顶部 import → F401+F402** — 连通性检查在函数内写 `import socket`，与顶部 `import socket` 冲突：顶部 import 变 unused（F401），函数内 import 被标记为 shadowed（F402）；**所有 import 必须放文件顶部，禁止函数内 import 同名模块** | 本会话 2026-09-21 | P2-1a |
 
 ---
 
@@ -184,6 +185,7 @@ python -m flake8 src/ tests/ audit_prd.py --max-line-length=100
 - ✅ 必须 black **写入** 后再 flake8 确认零错误
 - **修改的文件**（新增/修复 bug）必须通过 flake8 零错误；历史遗留的长行（E501）需 black 自动换行处理
 - **新增 import** 必须放在文件顶部，禁止函数内 `import socket as _x`（L23 教训：L304 引用 L347 才定义的变量 → NameError）
+- **禁止函数内 import 与顶部同名模块**（L24 教训：函数内 `import socket` → 顶部 F401 unused + 函数内 F402 shadowed）
 
 ### P2-2 audit_prd.py 本身的完整性 + 审计必须全量（**强制，防 L11/L10**）
 **审计必须完整跑一次 `python audit_prd.py`，不能挑选章节或维度**（防 L11/L10）：

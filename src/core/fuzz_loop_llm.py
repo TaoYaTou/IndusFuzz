@@ -141,7 +141,6 @@ def run(config):
         if not target:
             continue
         host, port = _parse_target(target)
-        import socket
 
         s = socket.socket()
         s.settimeout(2)
