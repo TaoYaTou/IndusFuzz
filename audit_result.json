@@ -233,16 +233,16 @@
       "collect_exit": 0,
       "collected_items": 147,
       "pytest_exit": 0,
-      "pytest_summary": "============================ 147 passed in 33.90s ============================="
+      "pytest_summary": "============================ 147 passed in 27.89s ============================="
     }
   },
   "5.12": {
     "flake8_src_summary": [
-      "8     E701 multiple statements on one line (colon)",
       "1     E741 ambiguous variable name 'l'",
+      "1     F401 'socket' imported but unused",
+      "1     F402 import 'socket' from line 6 shadowed by loop variable",
       "35    F541 f-string is missing placeholders",
-      "6     F841 local variable 'response' is assigned to but never used",
-      "1     W391 blank line at end of file"
+      "6     F841 local variable 'response' is assigned to but never used"
     ],
     "flake8_tests_summary": [
       "tests/test_mutator.py:58:121: E501 line too long (126 > 120 characters)",
