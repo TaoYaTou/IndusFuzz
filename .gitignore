@@ -56,3 +56,6 @@ IndusFuzz-v*/
 IndusFuzz-Desktop-v*/
 *.zip
 *.spec.bak
+一键PUSH.bat
+_test_version.bat
+_test_version2.bat
