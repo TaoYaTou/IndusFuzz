@@ -165,7 +165,7 @@ python main.py
 
 ### EXE installation (recommended for end users)
 
-**Available from Releases.** Download `IndusFuzz.exe` from the GitHub [Releases](../../releases) page. A local build can also be produced with the packaging toolchain (output: `IndusFuzz-v1.8.5-win64\IndusFuzz.exe`).
+**Available from Releases.** Download `IndusFuzz.exe` or the ZIP from the GitHub [Releases](../../releases) page. The **ZIP is recommended**, because it contains all required files.
 
 ### Verify the installation
 
@@ -413,19 +413,17 @@ IndusFuzz/
 ├── IndusFuzz.spec               # PyInstaller spec for EXE packaging
 ├── version_info.txt             # Version metadata for the packaged EXE
 ├── verify_build.py              # Build verification script
-├── build.ps1 / build.bat        # Packaging scripts (PowerShell + batch)
+├── build.bat                    # Packaging script
 ├── 一键打包.bat                  # Windows one-click packaging entry
 ├── make_release.bat             # Release package assembly script
+├── 清除缓存.bat                  # Packaging cache cleanup
 ├── run_all_tests.py             # 6-stage test orchestrator (with Chinese HTML report)
 ├── run_tests.bat                # One-click test entry
-├── start_fuzz.bat               # One-click launch script
 ├── pytest.ini                   # pytest configuration
-├── requirements.txt             # Runtime dependencies (pywin32 with Windows env marker)
 ├── requirements-test.txt        # Test dependencies (pytest-cov / bandit / flake8 / black)
 ├── bandit_config.yml            # Bandit security scan configuration
 ├── .pre-commit-config.yaml      # pre-commit hooks (black 24.10.0 + flake8 + bandit)
 ├── .github/workflows/           # CI/CD (test.yml: push/PR → pytest+lint+bandit; release.yml: tag v* → PyInstaller→ZIP→GitHub Release with auto notes)
-├── clean_cache.ps1              # Packaging cache cleanup
 ├── assets/
 │   ├── fonts/simhei.ttf         # Chinese font for PDF rendering
 │   └── concept_a_hex/           # App logo icons
@@ -443,7 +441,8 @@ IndusFuzz/
 │   └── clean_before_release.py  # Pre-release cleanup
 ├── tests/                       # conftest + helpers + 4 test_*.py (147 pytest cases)
 ├── docs/                        # PRD documents
-└── reports/                     # Generated reports``
+└── reports/                     # Generated reports
+```
 
 ---
 

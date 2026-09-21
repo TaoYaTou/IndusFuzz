@@ -454,60 +454,38 @@ IndusFuzz/
 ├── main.py                      # 入口：横幅、环境检查、向导、启动从站、模糊测试
 ├── requirements.txt             # Python 依赖
 ├── start_fuzz.bat               # 一键启动脚本
-├── CHANGELOG.md                 # 版本发布历史
-├── IndusFuzz.spec               # PyInstaller 打包配置（当前）
+├── CHANGELOG.md                 # 版本发布历史（中英双语）
+├── IndusFuzz.spec               # PyInstaller 打包配置
 ├── version_info.txt             # 打包 EXE 的版本元数据
 ├── verify_build.py              # 构建校验脚本
 ├── build.bat                    # 打包/构建脚本
+├── 一键打包.bat                  # Windows 一键打包入口
 ├── make_release.bat             # 发布包组装脚本
-├── build/                       # PyInstaller 中间构建产物
-├── dist/                        # PyInstaller 输出（IndusFuzz.exe）
+├── 清除缓存.bat                  # 打包缓存清理
+├── run_all_tests.py             # 6 阶段测试编排器（生成中文 HTML 报告）
+├── run_tests.bat                # 一键测试入口
+├── pytest.ini                   # pytest 配置
+├── requirements-test.txt        # 测试依赖（pytest-cov / bandit / flake8 / black）
+├── bandit_config.yml            # Bandit 安全扫描配置
+├── .pre-commit-config.yaml      # pre-commit 钩子（black 24.10.0 + flake8 + bandit）
+├── .github/workflows/           # CI/CD（test.yml：push/PR → pytest+lint+bandit；release.yml：tag v* → PyInstaller→ZIP→自动发布含说明）
 ├── assets/
 │   ├── fonts/simhei.ttf         # PDF 渲染用中文字体
-│   └── concept_a_hex/           # 应用 Logo 图标（icon_128/256/512.png、icon.ico、icon.svg 等）
+│   └── concept_a_hex/           # 应用 Logo 图标
 ├── src/
-│   ├── core/
-│   │   ├── version.py           # 版本号的唯一来源
-│   │   ├── menu.py              # 6 步交互向导
-│   │   ├── fuzz_loop_llm.py     # 模糊测试编排、LLM 预检、超时熔断、错误报告
-│   │   ├── llm_precheck.py      # LLM 连通性预检 + 协议超时熔断
-│   │   ├── llm_status.py        # 每协议 LLM 调用状态收集
-│   │   ├── report_generator.py  # HTML/PDF/LOG 报告生成
-│   │   ├── result_analyzer.py   # 结果统计
-│   │   ├── slave_launcher.py    # 后台启动/停止模拟从站
-│   │   ├── diagnose.py          # 连通性诊断
-│   │   ├── security.py          # Windows DPAPI 加密存储 API Key
-│   │   ├── runtime_config.py    # 全局运行时开关（如 GPU）
-│   │   ├── gpu_detector.py      # GPU 检测（nvidia-smi / torch）
-│   │   └── color_output.py      # ANSI 彩色输出（Windows VT 降级）
-│   ├── protocols/               # 协议插件
-│   │   ├── registry.py          # 插件注册表
-│   │   ├── base.py              # ProtocolBase 抽象基类
-│   │   ├── llm_mutator_base.py  # LLM 变异基类（timeout/retry/错误分类/长度校验/None 防护统一收敛）
-│   │   ├── func_codes/*.json    # 各协议功能码定义（7 个）
-│   │   └── {modbus,s7comm,dnp3,iec104,iec61850,enip,opcua}/
-│   │       ├── __init__.py      # register_protocol
-│   │       ├── client.py        # 客户端、报文构造、分类、run_fuzz
-│   │       ├── mutator.py       # 本地确定性变异
-│   │       └── llm_mutator.py   # LLM 变异薄壳（委托给 llm_mutator_base）
-│   │       （modbus 协议额外含 modbus_tools.py，基于 scapy 构造 Modbus 请求）
-│   └── integrations/            # MCP 集成（开发中桩文件）
-│       ├── vulnclaw_mcp.py
-│       ├── codeguard_mcp.py
-│       └── codeinspectus_mcp.py
-├── config/
-│   ├── __init__.py
-│   └── connect_templates.yaml   # 真实设备连接参数模板（7 协议，对应 menu.py PROTOCOL_CONNECT_PARAMS）
-├── server/                      # 全部 7 个协议的模拟从站（*_server.py，支持 --host --port --strict）
+│   ├── core/version.py          # 版本号唯一来源（git describe → env → HARDCODED 三源）
+│   ├── core/*.py                # menu / fuzz_loop_llm / report_generator / security 等 11 个模块
+│   ├── protocols/               # 7 协议（modbus/s7comm/dnp3/iec104/iec61850/enip/opcua）+ registry + base + llm_mutator_base + func_codes/*.json
+│   └── integrations/            # MCP 集成（codeguard / codeinspectus / vulnclaw）
+├── config/                      # connect_templates.yaml
+├── server/                      # 7 个协议的模拟从站（*_server.py，支持 --host --port --strict）
 ├── tools/
+│   ├── verify/                  # 8 个验证脚本
+│   ├── legacy/                  # 2 个遗留辅助脚本
 │   ├── check_protocol.py        # 协议完整性自检
-│   └── clean_before_release.py  # 发布前清理临时/报告文件
-├── tests/
-│   ├── verify_*.py              # 验证脚本（fuzz_flow、phase7_static、strict_wiring、gpu 等）
-│   ├── test_*.py                # 单元测试（mutator、reporter、tools）
-│   ├── fuzz_loop.py             # fuzz 循环测试入口
-│   └── legacy/                  # 遗留测试脚本
-├── docs/                        # PRD 文档（协议扩展/审计/审计修复总结，共 3 份）
+│   └── clean_before_release.py  # 发布前清理
+├── tests/                       # conftest + helpers + 4 个 test_*.py（147 项 pytest 用例）
+├── docs/                        # PRD 文档
 └── reports/                     # 生成的报告
 ```
 

@@ -59,3 +59,15 @@ IndusFuzz-Desktop-v*/
 一键PUSH.bat
 _test_version.bat
 _test_version2.bat
+docs/audit-rules/a01-broken-access-control.md
+docs/audit-rules/a02-security-misconfiguration.md
+docs/audit-rules/security-baseline.md
+docs/audit-rules/llm-top10.md
+docs/audit-rules/a10-exception-handling.md
+docs/audit-rules/a09-logging-failures.md
+docs/audit-rules/a08-integrity-failures.md
+docs/audit-rules/a07-authentication-failures.md
+docs/audit-rules/a06-insecure-design.md
+docs/audit-rules/a05-injection.md
+docs/audit-rules/a04-cryptographic-failures.md
+docs/audit-rules/a03-supply-chain.md
