@@ -1,4 +1,4 @@
-﻿# IndusFuzz 全生命周期规则 v5（2026-09-21 固化，含 20 条经验教训）
+# IndusFuzz 全生命周期规则 v5（2026-09-21 固化，含 20 条经验教训）
 
 ## 🚨 经验教训速查表（红线，每条都踩过或验证过）
 
@@ -26,6 +26,7 @@
 | **L20** | **func_codes JSON 漏新协议** — audit 5.15 dim5 发现 JSON 字段不全 | 本会话 2026-09-20 | P1-2 |
 | **L21** | **组装/文档时凭空写文件名不核实磁盘** — P3-3 凭空写 config/protocols.json（实际只有 connect_templates.yaml），违反 P1-3c | 本会话 2026-09-21 | P1-3c/P3-3 |
 | **L22** | **daemon 线程在 socket recv 阻塞，报告生成后还输出** — stop_event.set() 后 recv 还在等 timeout，主循环已 continue 到报告生成；必须额外 shutdown+close socket 强制打断 recv | 本会话 2026-09-21 | fuzz_loop_llm.py |
+| **L23** | **打包前跳过 black 格式化导致 flake8 E701/E501 报错** — 修 socket 时用了 `try: x() except: pass` 一行写法，未跑 black 直接打包，EXE 运行时 flake8/导入链路出错；**打包前必须先 black 全项目 + flake8 零错误** | 本会话 2026-09-21 | P2-1a/P3-0 |
 
 ---
 
@@ -169,6 +170,21 @@ python -m pytest tests/ -q --tb=short
 3. **新增协议 client.connect() 握手校验**（防 L4/L13）：
    用假 TCP server（只回 SYN/ACK，不回协议帧）验证 client.connect() **正确返回 False**
 
+### P2-1a black 格式化 + flake8 零错误（**强制，防 L23**）
+**打包前必须先跑 black 格式化 + flake8 检查，缺一不可**：
+```bash
+# 1. black 自动格式化全项目（写入模式，不只是 check）
+python -m black src/ tests/ audit_prd.py
+
+# 2. flake8 检查零错误（重点看 E701/E501/F841/F541）
+python -m flake8 src/ tests/ audit_prd.py --max-line-length=100
+```
+- ❌ 禁止跳过 black 直接打包（L23 教训：`try: x() except: pass` 一行写法 → E701）
+- ❌ 禁止只跑 `black --check` 不实际写入（格式问题不会自动修复）
+- ✅ 必须 black **写入** 后再 flake8 确认零错误
+- **修改的文件**（新增/修复 bug）必须通过 flake8 零错误；历史遗留的长行（E501）需 black 自动换行处理
+- **新增 import** 必须放在文件顶部，禁止函数内 `import socket as _x`（L23 教训：L304 引用 L347 才定义的变量 → NameError）
+
 ### P2-2 audit_prd.py 本身的完整性 + 审计必须全量（**强制，防 L11/L10**）
 **审计必须完整跑一次 `python audit_prd.py`，不能挑选章节或维度**（防 L11/L10）：
 - ❌ 禁止 `python audit_prd.py --dim 5.15` 只跑目录规范
@@ -206,6 +222,16 @@ python -m pytest tests/ -q --tb=short
 ---
 
 # 阶段 3：发布规则（单向流水线，固定顺序）
+
+### P3-0 black 格式化前置（**强制，防 L23**）
+> **打包前第一个动作**（不是 P3-1）。代码风格必须统一，否则 PyInstaller 打包后可能因为格式问题导致运行时异常。
+```powershell
+python -m black src/ tests/ audit_prd.py
+python -m flake8 src/ tests/ audit_prd.py --max-line-length=100
+```
+- 必须 black **写入**（不是 `--check`），让 black 自动修复换行/缩进
+- flake8 必须 **零错误**（至少修改的文件零错误）
+- 禁止跳过此步直接 P3-1
 
 ### P3-1 旧产物强制清除（防 L1/L12）
 > 打包步骤**第一个动作**。磁盘上**永远只能有一个版本**。

@@ -3,6 +3,7 @@ import time
 import threading
 import sys
 import os
+import socket
 import datetime
 import platform
 import subprocess
@@ -20,7 +21,6 @@ from src.core.llm_precheck import (
     precheck_llm,
     PROTOCOL_FUZZ_TIMEOUT,
 )
-
 
 auto_load_builtin()
 
@@ -42,7 +42,9 @@ def _log_exception(context=""):
                 f.write("\n")
     except Exception:
         pass
-    last_line = exc_text.strip().splitlines()[-1] if exc_text.strip() else "unknown error"
+    last_line = (
+        exc_text.strip().splitlines()[-1] if exc_text.strip() else "unknown error"
+    )
     print(f"[ERROR] {context}: {last_line}")
 
 
@@ -62,11 +64,13 @@ def _parse_target(target):
 def _load_model_config():
     """读取 ~/.indusfuzz/config.json 里的 model 配置，解密 api_key 后返回。"""
     from src.core import security
+
     cfg_path = os.path.join(os.path.expanduser("~"), ".indusfuzz", "config.json")
     if not os.path.exists(cfg_path):
         return {}
     try:
         import json
+
         with open(cfg_path, "r", encoding="utf-8") as f:
             cfg = json.load(f)
         model = cfg.get("model", {})
@@ -97,6 +101,7 @@ def run(config):
     gpu_enabled = bool(gpu_cfg.get("enabled", False))
     gpu_summary = gpu_cfg.get("summary", "")
     from src.core.runtime_config import set_gpu_config
+
     set_gpu_config(gpu_enabled, gpu_summary)
     if gpu_enabled:
         print(f"[GPU] 加速已启用: {gpu_summary}")
@@ -137,13 +142,16 @@ def run(config):
             continue
         host, port = _parse_target(target)
         import socket
+
         s = socket.socket()
         s.settimeout(2)
         try:
             s.connect((host, port))
             print(f"  ✅ {protocol_name:12} -> {host}:{port} 连通")
         except Exception as e:
-            print(f"  ⚠️  {protocol_name:12} -> {host}:{port} 不通 ({type(e).__name__}) — fuzz 可能全部返回 CONN_CLOSED")
+            print(
+                f"  ⚠️  {protocol_name:12} -> {host}:{port} 不通 ({type(e).__name__}) — fuzz 可能全部返回 CONN_CLOSED"
+            )
         finally:
             try:
                 s.close()
@@ -182,7 +190,9 @@ def run(config):
         print()
         print("=" * 60)
         try:
-            confirm = getpass.getpass("如全部确认，请输入 YES（必须大写，输入不回显）继续：").strip()
+            confirm = getpass.getpass(
+                "如全部确认，请输入 YES（必须大写，输入不回显）继续："
+            ).strip()
         except Exception:
             confirm = ""
         if confirm != "YES":
@@ -242,26 +252,37 @@ def run(config):
                     ok = client.connect(host, port, **extra)
                     if not ok:
                         print(f"⚠️  [{protocol_name}] 连接真实设备失败，跳过该协议")
-                        protocol_errors.append({
-                            "protocol": protocol_name,
-                            "error_type": "connect_failed",
-                            "reason": f"无法连接 {host}:{port}",
-                        })
+                        protocol_errors.append(
+                            {
+                                "protocol": protocol_name,
+                                "error_type": "connect_failed",
+                                "reason": f"无法连接 {host}:{port}",
+                            }
+                        )
                         return
                 client.run_fuzz(
-                    func_codes, host, port, timeout,
-                    protocol_results, protocol_skipped, protocol_build_failures,
-                    llm_status=protocol_llm_status, stop_event=stop_event,
+                    func_codes,
+                    host,
+                    port,
+                    timeout,
+                    protocol_results,
+                    protocol_skipped,
+                    protocol_build_failures,
+                    llm_status=protocol_llm_status,
+                    stop_event=stop_event,
                 )
                 if getattr(client, "_conn_failures", 0) > 3:
                     print(f"⚠️  [{protocol_name}] 连接中断超过 3 次，剩余用例已跳过")
             except KeyError as e:
                 fuzz_error[0] = ("KeyError", str(e))
                 for idx, fc in enumerate(func_codes, start=1):
-                    protocol_skipped.append({
-                        "round": idx, "func_code": fc,
-                        "reason": f"协议 {protocol_name} 未注册",
-                    })
+                    protocol_skipped.append(
+                        {
+                            "round": idx,
+                            "func_code": fc,
+                            "reason": f"协议 {protocol_name} 未注册",
+                        }
+                    )
             except Exception as e:
                 fuzz_error[0] = (type(e).__name__, str(e))
                 _log_exception(f"fuzz_loop:{protocol_name}")
@@ -281,16 +302,24 @@ def run(config):
         if t.is_alive():
             elapsed = time.time() - fuzz_start
             protocol_timed_out = True
-            print(f"\n⚠️  [超时] 协议 {protocol_name} fuzz 超过 {PROTOCOL_FUZZ_TIMEOUT} 秒（已跑 {elapsed:.0f}s），强制终止")
-            print(f"⚠️  [超时] 已收集 {len(protocol_results)} 条结果，这些结果仍然会生成报告")
-            protocol_errors.append({
-                "protocol": protocol_name,
-                "error_type": "timeout",
-                "elapsed": round(elapsed, 1),
-                "completed_func_codes": len(set(r.get("func_code") for r in protocol_results)),
-                "total_func_codes": len(func_codes),
-                "reason": f"fuzz 超过 {PROTOCOL_FUZZ_TIMEOUT} 秒未完成，可能是 LLM 推理过慢或目标无响应",
-            })
+            print(
+                f"\n⚠️  [超时] 协议 {protocol_name} fuzz 超过 {PROTOCOL_FUZZ_TIMEOUT} 秒（已跑 {elapsed:.0f}s），强制终止"
+            )
+            print(
+                f"⚠️  [超时] 已收集 {len(protocol_results)} 条结果，这些结果仍然会生成报告"
+            )
+            protocol_errors.append(
+                {
+                    "protocol": protocol_name,
+                    "error_type": "timeout",
+                    "elapsed": round(elapsed, 1),
+                    "completed_func_codes": len(
+                        set(r.get("func_code") for r in protocol_results)
+                    ),
+                    "total_func_codes": len(func_codes),
+                    "reason": f"fuzz 超过 {PROTOCOL_FUZZ_TIMEOUT} 秒未完成，可能是 LLM 推理过慢或目标无响应",
+                }
+            )
             protocol_llm_status.on_call("TIMEOUT")
             # 触发协作停止事件，让线程在下一个检查点自行退出
             stop_event.set()
@@ -300,39 +329,49 @@ def run(config):
                 try:
                     s = getattr(_client, "_sock", None)
                     if s is not None:
-                        try: s.shutdown(__import__("socket").SHUT_RDWR)
-                        except Exception: pass
-                        try: s.close()
-                        except Exception: pass
+                        try:
+                            s.shutdown(socket.SHUT_RDWR)
+                        except Exception:
+                            pass
+                        try:
+                            s.close()
+                        except Exception:
+                            pass
                 except Exception:
                     pass
             # 给线程一个宽限期让其彻底退出（socket 关闭后 recv 立即抛异常）
             t.join(timeout=5)
             if t.is_alive():
-                print(f"⚠️  [超时] 协议 {protocol_name} 线程仍在运行，将在主进程退出时被强制清理")
+                print(
+                    f"⚠️  [超时] 协议 {protocol_name} 线程仍在运行，将在主进程退出时被强制清理"
+                )
             protocol_llm_status.on_fallback_only("TIMEOUT")
         elif fuzz_error[0]:
             err_type, err_msg = fuzz_error[0]
             elapsed = time.time() - fuzz_start
             print(f"\n⚠️  [异常] 协议 {protocol_name} 执行异常 {err_type}: {err_msg}")
-            protocol_errors.append({
-                "protocol": protocol_name,
-                "error_type": err_type,
-                "error_msg": err_msg,
-                "elapsed": round(elapsed, 1),
-            })
+            protocol_errors.append(
+                {
+                    "protocol": protocol_name,
+                    "error_type": err_type,
+                    "error_msg": err_msg,
+                    "elapsed": round(elapsed, 1),
+                }
+            )
 
-        all_protocol_data.append({
-            "protocol_name": protocol_name,
-            "target": target,
-            "results": protocol_results,
-            "skipped": protocol_skipped,
-            "build_failures": protocol_build_failures,
-            "llm_status": protocol_llm_status,
-            "slave_mode": slave_mode,
-            "protocol_timed_out": protocol_timed_out,
-            "_client": client_instance[0],  # 用于超时强制关闭 socket
-        })
+        all_protocol_data.append(
+            {
+                "protocol_name": protocol_name,
+                "target": target,
+                "results": protocol_results,
+                "skipped": protocol_skipped,
+                "build_failures": protocol_build_failures,
+                "llm_status": protocol_llm_status,
+                "slave_mode": slave_mode,
+                "protocol_timed_out": protocol_timed_out,
+                "_client": client_instance[0],  # 用于超时强制关闭 socket
+            }
+        )
 
         all_results.extend(protocol_results)
         all_skipped.extend(protocol_skipped)
@@ -340,7 +379,6 @@ def run(config):
 
     # ============ 步骤 2：汇总 + 错误报告 ============
     # 最终安全网：强制关闭所有 client 的 socket，确保没有 daemon 线程在 recv 里阻塞继续输出
-    import socket as _socket_mod
     for pd in all_protocol_data:
         _c = pd.get("_client")
         if _c is None:
@@ -348,14 +386,20 @@ def run(config):
         try:
             s = getattr(_c, "_sock", None)
             if s is not None:
-                try: s.shutdown(_socket_mod.SHUT_RDWR)
-                except Exception: pass
-                try: s.close()
-                except Exception: pass
+                try:
+                    s.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                try:
+                    s.close()
+                except Exception:
+                    pass
         except Exception:
             pass
 
-    conn_closed_count = sum(1 for r in all_results if r.get("classification") == "CONN_CLOSED")
+    conn_closed_count = sum(
+        1 for r in all_results if r.get("classification") == "CONN_CLOSED"
+    )
     print(f"\n{'='*50}")
     print(f"=== 全部协议总计 ===")
     print(f"总数: {len(all_results)}, CONN_CLOSED: {conn_closed_count}")
@@ -364,7 +408,9 @@ def run(config):
     if protocol_errors:
         print(f"\n⚠️  有 {len(protocol_errors)} 个协议出现问题：")
         for e in protocol_errors:
-            print(f"  [{e.get('error_type', '?')}] {e['protocol']}: {e.get('reason', e.get('error_msg', ''))}")
+            print(
+                f"  [{e.get('error_type', '?')}] {e['protocol']}: {e.get('reason', e.get('error_msg', ''))}"
+            )
 
     if all_protocol_data:
         try:
@@ -378,6 +424,7 @@ def run(config):
             print_info(f"[INFO] 报告已生成：{report_path}")
             try:
                 import webbrowser
+
                 webbrowser.open("file://" + os.path.abspath(report_path))
                 print_info("[INFO] 已自动打开浏览器")
                 print_info("[INFO] 如果浏览器未打开，请手动访问上述路径")
@@ -414,8 +461,16 @@ def _summarize_suggestions(protocol_errors, model_cfg):
     model_name = (model_cfg or {}).get("name", "")
 
     if timeout_count > 0:
-        completed = sum(e.get("completed_func_codes", 0) for e in protocol_errors if e.get("error_type") == "timeout")
-        total = sum(e.get("total_func_codes", 0) for e in protocol_errors if e.get("error_type") == "timeout")
+        completed = sum(
+            e.get("completed_func_codes", 0)
+            for e in protocol_errors
+            if e.get("error_type") == "timeout"
+        )
+        total = sum(
+            e.get("total_func_codes", 0)
+            for e in protocol_errors
+            if e.get("error_type") == "timeout"
+        )
         if provider == "ollama":
             tips_zh.append(
                 f"- {timeout_count} 个协议 fuzz 超时（已完成 {completed}/{total} 个功能码）。\n"
@@ -465,7 +520,9 @@ def _summarize_suggestions(protocol_errors, model_cfg):
             )
 
     tips_zh.append("- 安全提示：使用云端 API 时数据会发送到第三方，敏感场景请勿使用")
-    tips_en.append("- Security Notice: When using cloud APIs, data is sent to third parties. Do not use in sensitive scenarios.")
+    tips_en.append(
+        "- Security Notice: When using cloud APIs, data is sent to third parties. Do not use in sensitive scenarios."
+    )
 
     if not tips_zh:
         tips_zh.append("- 未知错误，请查看上方错误信息")

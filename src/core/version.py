@@ -1,4 +1,4 @@
-"""IndusFuzz version — single source of truth.
+﻿"""IndusFuzz version — single source of truth.
 
 Prefers git describe when available (production build with tags),
 falls back to HARDCODED_VERSION for dev environments without git tags.
@@ -6,9 +6,9 @@ falls back to HARDCODED_VERSION for dev environments without git tags.
 All version references (main.py banner, report_generator, CLI --version)
 import from here — do NOT hardcode version strings elsewhere.
 """
+
 import os
 import subprocess
-
 
 HARDCODED_VERSION = "1.8.5"
 
@@ -60,5 +60,3 @@ def get_version():
 
 
 __version__ = get_version()
-
-
