@@ -24,32 +24,7 @@
 </p>
 
 ---
-
-## Table of Contents
-
-2. [Introduction](#2-introduction)
-3. [Background & Design](#3-background-design)
-4. [Roadmap](#4-roadmap)
-5. [Environment Requirements](#5-environment-requirements)
-6. [System Compatibility](#6-system-compatibility)
-7. [Installation](#7-installation)
-8. [Supported Protocols](#8-supported-protocols)
-9. [Quick Start](#9-quick-start)
-10. [Usage Scenarios](#10-usage-scenarios)
-11. [Real Device Testing Guide](#11-real-device-testing-guide)
-12. [Model Configuration](#12-model-configuration)
-13. [Supported Models](#13-supported-models)
-14. [Dependencies](#14-dependencies)
-15. [Reports](#15-reports)
-16. [Known Limitations](#16-known-limitations)
-17. [Project Structure](#17-project-structure)
-18. [FAQ](#18-faq)
-19. [Disclaimer](#19-disclaimer)
-20. [License](#20-license)
-
----
-
-## 2. Introduction
+## 1. Introduction
 
 **IndusFuzz** is an industrial protocol fuzzing agent. It drives protocol-level fuzzing with a local LLM and automatically falls back to local deterministic random mutation when the LLM is unavailable.
 
@@ -63,7 +38,7 @@ Supported protocols: **Modbus TCP, S7Comm, DNP3, IEC 60870-5-104, IEC 61850 MMS,
 
 ---
 
-## 3. Background & Design
+## 2. Background & Design
 
 ### 2.1 Why fuzz industrial protocols
 
@@ -97,7 +72,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 ---
 
-## 4. Roadmap
+## 3. Roadmap
 
 | Version | Major changes | Status |
 |---------|---------------|--------|
@@ -106,7 +81,7 @@ By default everything runs on local Ollama, so data never leaves your machine. C
 
 ---
 
-## 5. Environment Requirements
+## 4. Environment Requirements
 
 | Item | Requirement |
 |------|-------------|
@@ -119,7 +94,7 @@ No GPU is required. Ollama runs on CPU by default; when using local Ollama, the 
 
 ---
 
-## 6. System Compatibility
+## 5. System Compatibility
 
 | Feature | Windows 10/11 | macOS | Linux |
 |---------|--------------|-------|-------|
@@ -138,7 +113,7 @@ No GPU is required. Ollama runs on CPU by default; when using local Ollama, the 
 
 ---
 
-## 7. Installation
+## 6. Installation
 
 ### Source installation (recommended for developers)
 
@@ -202,6 +177,14 @@ The IndusFuzz banner and interactive wizard appearing means success. Press `q` t
 
 ---
 
+## 7. Quick Start
+
+1. **Start**: `python main.py` or `start_fuzz.bat` or `IndusFuzz.exe`
+2. **Follow the wizard**: choose model source, scenario, protocols, function codes, targets, timeout.
+3. **After the run**, open the reports in the `reports/` directory.
+
+---
+
 ## 8. Supported Protocols
 
 | Protocol | Default Port | Typical Devices | Built-in Mock Slave | Simulator Tested |
@@ -228,15 +211,7 @@ Typical use cases:
 
 ---
 
-## 9. Quick Start
-
-1. **Start**: `python main.py` or `start_fuzz.bat` or `IndusFuzz.exe`
-2. **Follow the wizard**: choose model source, scenario, protocols, function codes, targets, timeout.
-3. **After the run**, open the reports in the `reports/` directory.
-
----
-
-## 10. Usage Scenarios
+## 9. Usage Scenarios
 
 ### Scenario 1: Local self-test
 
@@ -254,7 +229,7 @@ Typical use cases:
 
 ---
 
-## 11. Real Device Testing Guide
+## 10. Real Device Testing Guide
 
 ### 14.1 Prerequisites
 
@@ -320,7 +295,7 @@ Before running fuzzing against real industrial devices, ALL of the following mus
 
 ---
 
-## 12. Model Configuration
+## 11. Model Configuration
 
 Only one model source is configured per run (applies globally to all protocols). There are 4 options:
 
@@ -361,7 +336,7 @@ Choose **No LLM** to use local deterministic random mutation directly. No API ke
 
 ---
 
-## 13. Supported Models
+## 12. Supported Models
 
 ### Models supported by local Ollama (recommended)
 
@@ -386,7 +361,7 @@ Choose **No LLM** to use local deterministic random mutation directly. No API ke
 
 ---
 
-## 14. Dependencies
+## 13. Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -401,7 +376,7 @@ Choose **No LLM** to use local deterministic random mutation directly. No API ke
 
 ---
 
-## 15. Reports
+## 14. Reports
 
 Reports are saved in the `reports/` directory:
 
@@ -415,7 +390,7 @@ Reports contain: statistical summary, risk grading, anomaly distribution, functi
 
 ---
 
-## 16. Known Limitations
+## 15. Known Limitations
 
 | ID | Protocol | Note |
 |----|----------|------|
@@ -427,7 +402,7 @@ Reports contain: statistical summary, risk grading, anomaly distribution, functi
 
 ---
 
-## 17. Project Structure
+## 16. Project Structure
 
 ```
 IndusFuzz/
@@ -472,7 +447,7 @@ IndusFuzz/
 
 ---
 
-## 18. FAQ
+## 17. FAQ
 
 **The server connection failed, what should I do?**
 Check whether the target `IP:port` is reachable, whether the port is occupied (e.g. `netstat -ano | findstr port`), and whether the environment and dependencies are installed. The wizard shows troubleshooting hints on failure.
@@ -504,7 +479,7 @@ Because v1.8.3 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plan
 
 ---
 
-## 19. Disclaimer
+## 18. Disclaimer
 
 - This tool is for **authorized security testing only**.
 - **Do not** run it on unauthorized production devices.
@@ -513,7 +488,7 @@ Because v1.8.3 uses the Windows-specific DPAPI to encrypt the API key. v2.0 plan
 
 ---
 
-## 20. License
+## 19. License
 
 Licensed under the **Apache License 2.0**. See the `LICENSE` file for the full text.
 
