@@ -233,14 +233,14 @@
       "collect_exit": 0,
       "collected_items": 147,
       "pytest_exit": 0,
-      "pytest_summary": "============================ 147 passed in 27.89s ============================="
+      "pytest_summary": "============================ 147 passed in 29.54s ============================="
     }
   },
   "5.12": {
     "flake8_src_summary": [
+      "10    E402 module level import not at top of file",
+      "178   E501 line too long (129 > 120 characters)",
       "1     E741 ambiguous variable name 'l'",
-      "1     F401 'socket' imported but unused",
-      "1     F402 import 'socket' from line 6 shadowed by loop variable",
       "35    F541 f-string is missing placeholders",
       "6     F841 local variable 'response' is assigned to but never used"
     ],
