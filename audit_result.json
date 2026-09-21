@@ -233,7 +233,7 @@
       "collect_exit": 0,
       "collected_items": 147,
       "pytest_exit": 0,
-      "pytest_summary": "============================ 147 passed in 29.54s ============================="
+      "pytest_summary": "============================ 147 passed in 27.87s ============================="
     }
   },
   "5.12": {
@@ -244,10 +244,7 @@
       "35    F541 f-string is missing placeholders",
       "6     F841 local variable 'response' is assigned to but never used"
     ],
-    "flake8_tests_summary": [
-      "tests/test_mutator.py:58:121: E501 line too long (126 > 120 characters)",
-      "1     E501 line too long (126 > 120 characters)"
-    ],
+    "flake8_tests_summary": [],
     "bandit_src": {
       "high_count": 0,
       "top5": []
