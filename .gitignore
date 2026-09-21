@@ -71,3 +71,4 @@ docs/audit-rules/a06-insecure-design.md
 docs/audit-rules/a05-injection.md
 docs/audit-rules/a04-cryptographic-failures.md
 docs/audit-rules/a03-supply-chain.md
+清除缓存.bat
