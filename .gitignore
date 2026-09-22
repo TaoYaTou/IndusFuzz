@@ -73,3 +73,18 @@ docs/audit-rules/a04-cryptographic-failures.md
 docs/audit-rules/a03-supply-chain.md
 清除缓存.bat
 _push_test_input.txt
+
+# ignored by TAo 2026-09-22 17:29
+build.ps1
+
+# ignored by TAo 2026-09-22 17:29
+build.bat
+
+# ignored by TAo 2026-09-22 17:30
+clean_cache.ps1
+
+# ignored by TAo 2026-09-22 17:31
+verify_build.py
+
+# ignored by TAo 2026-09-22 17:31
+version_info.txt
