@@ -52,7 +52,7 @@ body_on_cloud = _extra_body({"provider": "cloud"})
 check("GPU开启+cloud时extra_body无num_gpu", "num_gpu" not in body_on_cloud)
 
 for proto in ["modbus", "s7comm", "dnp3", "iec104", "iec61850", "enip", "opcua"]:
-    mod = __import__(f"src.protocols.{proto}.llm_mutator", fromlist=["_extra_body"])
+    mod = __import__(f"src.protocols.{proto}.llm_mutator", fromlist=["_extra_body"]),
     body = mod._extra_body({"provider": "ollama"})
     check(f"{proto} llm_mutator 含_extra_body且GPU时num_gpu=99", body.get("num_gpu") == 99)
 
